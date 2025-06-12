@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { Glider } from '../glider';
 
 interface ScoreModifier { 
     value: number;
@@ -7,8 +8,12 @@ interface ScoreModifier {
 }
 
 export class Game extends Scene
-{
-    private plane!: Phaser.GameObjects.Rectangle;
+{   
+
+    private readonly ROTATION_SPEED: number = 0.03;
+    
+
+    private plane!: Glider;
     private floor!: Phaser.GameObjects.Rectangle;
     private launchButton!: Phaser.GameObjects.Container;
     private isOnGround: boolean = false;
@@ -18,6 +23,10 @@ export class Game extends Scene
     private score: number = 0;
 
     private scoreSquares!: Phaser.GameObjects.Group;
+
+    AKey: Phaser.Input.Keyboard.Key; SKey: Phaser.Input.Keyboard.Key; LeftKey: Phaser.Input.Keyboard.Key; RightKey: Phaser.Input.Keyboard.Key;
+
+    
 
 
     constructor ()
@@ -59,7 +68,7 @@ export class Game extends Scene
     {
         //world stuff
         this.physics.world.setBounds(0, 0, 3000, 600);
-        this.physics.world.gravity.y = 300;
+        this.physics.world.gravity.set(0,0);
 
         this.add.rectangle(0, 0, 3000, 600, 0x028af8).setOrigin(0, 0);
 
@@ -71,9 +80,9 @@ export class Game extends Scene
         this.launchButton.add([buttonBg, this.add.text(0, 0, 'Launch', {fontSize: '20px', color: '#000'}).setOrigin(0.5)])
 
         buttonBg.on('pointerdown', () => {
-            this.plane.setVisible(true);
-            (this.plane.body as Phaser.Physics.Arcade.Body).setVelocity(300, -400);
-            this.cameras.main.startFollow(this.plane);
+            this.plane.sprite.setVisible(true);
+            (this.plane.sprite.body as Phaser.Physics.Arcade.Body).setVelocity(30, 0);
+            this.cameras.main.startFollow(this.plane.sprite);
             this.launchButton.destroy();
         });
 
@@ -82,11 +91,11 @@ export class Game extends Scene
 
 
         //plane stuff
-        this.plane = this.add.rectangle(100, 300, 64, 32, 0xffffff);
-        this.physics.add.existing(this.plane);
-        this.plane.setVisible(false);    
+        this.plane = new Glider(this, 400, 300, 'plane');
+        this.plane.sprite.setVisible(false);
+        this.plane.sprite.rotation = - Math.PI / 6;    
 
-        this.physics.add.collider(this.plane, this.floor, () => {this.isOnGround = true});
+        this.physics.add.collider(this.plane.sprite, this.floor, () => {this.isOnGround = true; this.plane.sprite.rotation = 0;});
 
         //score calc
         this.scoreSquares = this.add.group();
@@ -104,7 +113,7 @@ export class Game extends Scene
             this.createScoreSquare(x, y, modifier);
         }
 
-        this.physics.add.overlap(this.plane, this.scoreSquares, (_plane, scoreSquare) => {
+        this.physics.add.overlap(this.plane.sprite, this.scoreSquares, (_plane, scoreSquare) => {
             const container = scoreSquare as Phaser.GameObjects.Container;
             const modifier: ScoreModifier = container.getData('modifier');
             this.score = this.calculateScore(this.score, modifier);
@@ -112,20 +121,49 @@ export class Game extends Scene
             this.scoreText.setText(`Score: ${this.score}`);
         });
 
+        //input
+        this.AKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.SKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        this.LeftKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+        this.RightKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+
+
+        
+
         
     }
 
-    update() {
-        if (this.plane.visible) {
-            const distance = Math.max(0, this.plane.x - this.startX);
+    update(_time: number, delta: number) {
+        if (this.plane.sprite.visible) {
+            
+            //world stuff
+            const distance = Math.max(0, this.plane.sprite.x - this.startX);
             this.distanceText.setText(`Distance: ${Math.floor(distance)}m`);
             this.scoreText.setText(`Score: ${this.score}`);
+            const body = this.plane.sprite.body as Phaser.Physics.Arcade.Body;
 
-            this.plane.rotation = Math.atan2(
-                (this.plane.body as Phaser.Physics.Arcade.Body).velocity.y,
-                (this.plane.body as Phaser.Physics.Arcade.Body).velocity.x
-            );
-            const body = this.plane.body as Phaser.Physics.Arcade.Body;
+
+                        
+            
+            //input
+            const leftPressed = this.LeftKey.isDown || this.AKey.isDown;
+            const rightPressed = this.RightKey.isDown || this.SKey.isDown;
+            
+            if (leftPressed){
+                this.plane.sprite.rotation -= this.ROTATION_SPEED;
+            }
+            if (rightPressed){
+                this.plane.sprite.rotation += this.ROTATION_SPEED;
+            }
+
+
+            const dt = delta / 1000;
+            this.plane.update(dt);
+        
+           
+
+            
+            
             if(this.isOnGround){
                 body.setVelocityX(body.velocity.x * 0.97)
                 if(Math.abs(body.velocity.x) < 10){
