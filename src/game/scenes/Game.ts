@@ -2,9 +2,10 @@ import { Scene } from 'phaser';
 
 export class Game extends Scene
 {
-    camera: Phaser.Cameras.Scene2D.Camera;
-    background: Phaser.GameObjects.Image;
-    msg_text : Phaser.GameObjects.Text;
+    private plane!: Phaser.GameObjects.Rectangle;
+    private floor!: Phaser.GameObjects.Rectangle;
+    private launchButton!: Phaser.GameObjects.Container;
+
 
     constructor ()
     {
@@ -13,23 +14,39 @@ export class Game extends Scene
 
     create ()
     {
-        this.camera = this.cameras.main;
-        this.camera.setBackgroundColor(0x00ff00);
+        this.physics.world.setBounds(0, 0, 3000, 600);
+        this.physics.world.gravity.y = 300;
 
-        this.background = this.add.image(512, 384, 'background');
-        this.background.setAlpha(0.5);
+        this.add.rectangle(0, 0, 3000, 600, 0x028af8).setOrigin(0, 0);
 
-        this.msg_text = this.add.text(512, 384, 'Make something fun!\nand share it with us:\nsupport@phaser.io', {
-            fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
+        this.floor = this.add.rectangle(0, 580, 3000, 20, 0x00ff00).setOrigin(0, 0);
+        this.physics.add.existing(this.floor, true);
+
+        this.plane = this.add.rectangle(100, 300, 64, 32, 0xffffff);
+        this.physics.add.existing(this.plane);
+        this.plane.setVisible(false);
+
+        this.launchButton = this.add.container(400, 500).setScrollFactor(0);
+        const buttonBg = this.add.rectangle(0, 0, 160, 40, 0x00ff00).setInteractive();
+        this.launchButton.add([buttonBg, this.add.text(0, 0, 'Launch', {fontSize: '20px', color: '#000'}).setOrigin(0.5)])
+
+
+        this.physics.add.collider(this.plane, this.floor);
+
+        buttonBg.on('pointerdown', () => {
+            this.plane.setVisible(true);
+            (this.plane.body as Phaser.Physics.Arcade.Body).setVelocity(200, -300);
+            this.cameras.main.startFollow(this.plane);
+            this.launchButton.destroy();
         });
-        this.msg_text.setOrigin(0.5);
+    }
 
-        this.input.once('pointerdown', () => {
-
-            this.scene.start('GameOver');
-
-        });
+    update() {
+        if (this.plane.visible) {
+            this.plane.rotation = Math.atan2(
+                (this.plane.body as Phaser.Physics.Arcade.Body).velocity.y,
+                (this.plane.body as Phaser.Physics.Arcade.Body).velocity.x
+            );
+        }
     }
 }
