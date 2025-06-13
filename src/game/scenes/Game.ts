@@ -17,9 +17,12 @@ export class Game extends Scene
     private floor!: Phaser.GameObjects.Rectangle;
     private launchButton!: Phaser.GameObjects.Container;
     private isOnGround: boolean = false;
+
+    private altitudeText!: Phaser.GameObjects.Text;
     private distanceText!: Phaser.GameObjects.Text;
     private scoreText!: Phaser.GameObjects.Text;
     private startX: number = 100;
+    private startY: number = 100;
     private score: number = 0;
 
     private scoreSquares!: Phaser.GameObjects.Group;
@@ -81,21 +84,24 @@ export class Game extends Scene
 
         buttonBg.on('pointerdown', () => {
             this.plane.sprite.setVisible(true);
-            (this.plane.sprite.body as Phaser.Physics.Arcade.Body).setVelocity(30, 0);
+            (this.plane.sprite.body as Phaser.Physics.Arcade.Body).setVelocity(1000, -300);
             this.cameras.main.startFollow(this.plane.sprite);
             this.launchButton.destroy();
         });
 
+
+        this.altitudeText = this.add.text(780, 50, 'Altitude: 0m', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
         this.distanceText = this.add.text(780, 20, 'Distance: 0m', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
         this.scoreText = this.add.text(20, 20, 'Score: 0', {fontSize: '24px', color: '#ffffff'}).setOrigin(0, 0).setScrollFactor(0);
+        
 
 
         //plane stuff
         this.plane = new Glider(this, 400, 300, 'plane');
         this.plane.sprite.setVisible(false);
-        this.plane.sprite.rotation = - Math.PI / 6;    
+        // this.plane.setAngle(- Math.PI / 6);    
 
-        this.physics.add.collider(this.plane.sprite, this.floor, () => {this.isOnGround = true; this.plane.sprite.rotation = 0;});
+        this.physics.add.collider(this.plane.sprite, this.floor, () => {this.isOnGround = true; this.plane.sprite.setAngle(0);});
 
         //score calc
         this.scoreSquares = this.add.group();
@@ -138,23 +144,13 @@ export class Game extends Scene
             
             //world stuff
             const distance = Math.max(0, this.plane.sprite.x - this.startX);
+            const altitude = -this.plane.sprite.y + 3*this.startY;
+            
+            this.altitudeText.setText(`Altitude: ${Math.floor(altitude)}m`);
             this.distanceText.setText(`Distance: ${Math.floor(distance)}m`);
             this.scoreText.setText(`Score: ${this.score}`);
+            
             const body = this.plane.sprite.body as Phaser.Physics.Arcade.Body;
-
-
-                        
-            
-            //input
-            const leftPressed = this.LeftKey.isDown || this.AKey.isDown;
-            const rightPressed = this.RightKey.isDown || this.SKey.isDown;
-            
-            if (leftPressed){
-                this.plane.sprite.rotation -= this.ROTATION_SPEED;
-            }
-            if (rightPressed){
-                this.plane.sprite.rotation += this.ROTATION_SPEED;
-            }
 
 
             const dt = delta / 1000;
