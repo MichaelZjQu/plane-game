@@ -1,11 +1,7 @@
 import { Scene } from 'phaser';
 import { Glider } from '../glider';
+import { ScoreModifier } from '../scoremodifier';
 
-interface ScoreModifier { 
-    value: number;
-    operation: '+' | '-' | 'x';
-    color: number;
-}
 
 export class Game extends Scene
 {   
@@ -22,7 +18,7 @@ export class Game extends Scene
     private distanceText!: Phaser.GameObjects.Text;
     private scoreText!: Phaser.GameObjects.Text;
     private startX: number = 100;
-    private startY: number = 100;
+    private startY: number = 572;
     private score: number = 0;
 
     private scoreSquares!: Phaser.GameObjects.Group;
@@ -37,36 +33,6 @@ export class Game extends Scene
         super('Game');
     }
 
-    createScoreSquare(x: number, y: number, modifier: ScoreModifier){
-        const square = this.add.rectangle(0, 0, 30, 30, modifier.color).setOrigin(0.5);
-
-        const text = this.add.text(0, 0, `${modifier.operation}${modifier.value}`, { fontSize: '16px', color: '#000' }).setOrigin(0.5, 0.5);
-
-        const container = this.add.container(x, y, [square, text]);
-        container.setData('modifier', modifier);
-
-        this.physics.world.enable(container);
-        const body = container.body as Phaser.Physics.Arcade.Body;
-        body.setSize(30, 30);
-        body.setImmovable(true);
-        body.setAllowGravity(false);
-
-        this.scoreSquares.add(container);
-        return container;
-    }
-
-    calculateScore(currentScore: number, modifier: ScoreModifier) {
-        switch (modifier.operation) {
-            case '+':
-                return currentScore + modifier.value;
-            case '-':
-                return Math.max(0, currentScore - modifier.value);
-            case 'x':
-                return currentScore * modifier.value;
-            default:
-                return currentScore;
-        }
-    }
     create ()
     {
         //world stuff
@@ -99,31 +65,24 @@ export class Game extends Scene
         //plane stuff
         this.plane = new Glider(this, 400, 300, 'plane');
         this.plane.sprite.setVisible(false);
-        // this.plane.setAngle(- Math.PI / 6);    
 
-        this.physics.add.collider(this.plane.sprite, this.floor, () => {this.isOnGround = true; this.plane.sprite.setAngle(0);});
+        this.physics.add.collider(this.plane.sprite, this.floor, () => {this.isOnGround = true;});
 
         //score calc
         this.scoreSquares = this.add.group();
 
-        const modifers: ScoreModifier[] = [
-            { value: 10, operation: '+', color: 0x00ff00 },
-            { value: 5, operation: '-', color: 0xff0000 },
-            { value: 1.2, operation: 'x', color: 0x0000ff }
-        ];
-
         for(let i = 0; i < 20; i++){
             const x = Phaser.Math.Between(400, 2800);
             const y = Phaser.Math.Between(100, 500);
-            const modifier = Phaser.Utils.Array.GetRandom(modifers);
-            this.createScoreSquare(x, y, modifier);
+            const modifier = ScoreModifier.createRandom(this, x, y);
+            this.scoreSquares.add(modifier.container);
         }
 
         this.physics.add.overlap(this.plane.sprite, this.scoreSquares, (_plane, scoreSquare) => {
             const container = scoreSquare as Phaser.GameObjects.Container;
             const modifier: ScoreModifier = container.getData('modifier');
-            this.score = this.calculateScore(this.score, modifier);
-            container.destroy();
+            this.score = modifier.calculateScore(this.score);
+            modifier.destroy();
             this.scoreText.setText(`Score: ${this.score}`);
         });
 
@@ -144,7 +103,7 @@ export class Game extends Scene
             
             //world stuff
             const distance = Math.max(0, this.plane.sprite.x - this.startX);
-            const altitude = -this.plane.sprite.y + 3*this.startY;
+            const altitude = -this.plane.sprite.y + this.startY;
             
             this.altitudeText.setText(`Altitude: ${Math.floor(altitude)}m`);
             this.distanceText.setText(`Distance: ${Math.floor(distance)}m`);

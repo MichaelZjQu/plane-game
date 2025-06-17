@@ -5,7 +5,8 @@ export class Glider {
     private angle = 0;
     private body!: Phaser.Physics.Arcade.Body;
     
-    private readonly DRAG = 0.99;
+    private readonly MAX_DRAG = 0.97;
+    private readonly BASE_DRAG = 0.995;
     private readonly ROTATION_SMOOTHING = 0.1;
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
@@ -19,14 +20,6 @@ export class Glider {
         this.angle = this.sprite.rotation;
     }
 
-    getAngle(): number {
-        return this.angle;
-    }
-    setAngle(newAngle: number) {
-        this.angle = newAngle;
-        this.sprite.rotation = this.angle;
-    }
-
     update(dt: number) {
         const vx = this.body.velocity.x;
         const vy = this.body.velocity.y;
@@ -34,8 +27,12 @@ export class Glider {
 
         const gravity = 300;
 
-        const targetRotation = Math.atan2(vy, vx);
 
+        //drag
+        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - speed/100000);
+
+        //rotation
+        const targetRotation = Math.atan2(vy, vx);
         this.angle = this.angle + (targetRotation - this.angle)* this.ROTATION_SMOOTHING;
 
         const optimalAngle = -Math.PI / 6;
@@ -43,7 +40,7 @@ export class Glider {
         const liftFactor = Math.max(0, 1-(angleDiff/(Math.PI/2)));
         const lift = -0.5 * speed * liftFactor;
 
-        this.body.setVelocity(vx * this.DRAG, vy * this.DRAG + gravity*dt + lift*dt);
+        this.body.setVelocity(vx * drag, vy * drag + gravity*dt + lift*dt);
 
         this.sprite.rotation = this.angle;
     }
