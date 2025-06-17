@@ -1,29 +1,29 @@
 import { Scene } from 'phaser';
 import { Glider } from '../glider';
 import { ScoreModifier } from '../scoremodifier';
+import { GameInput } from '../gameinput';
 
 
 export class Game extends Scene
 {   
+    private gameInput: GameInput;
 
-    private readonly ROTATION_SPEED: number = 0.03;
-    
-
-    private plane!: Glider;
-    private floor!: Phaser.GameObjects.Rectangle;
-    private launchButton!: Phaser.GameObjects.Container;
+    private plane: Glider;
+    private floor: Phaser.GameObjects.Rectangle;
+    private launchButton: Phaser.GameObjects.Container;
     private isOnGround: boolean = false;
 
-    private altitudeText!: Phaser.GameObjects.Text;
-    private distanceText!: Phaser.GameObjects.Text;
-    private scoreText!: Phaser.GameObjects.Text;
+    private altitudeText: Phaser.GameObjects.Text;
+    private distanceText: Phaser.GameObjects.Text;
+    private scoreText: Phaser.GameObjects.Text;
+    private velocityText: Phaser.GameObjects.Text;
+
     private startX: number = 100;
     private startY: number = 572;
     private score: number = 0;
 
     private scoreSquares!: Phaser.GameObjects.Group;
 
-    AKey: Phaser.Input.Keyboard.Key; SKey: Phaser.Input.Keyboard.Key; LeftKey: Phaser.Input.Keyboard.Key; RightKey: Phaser.Input.Keyboard.Key;
 
     
 
@@ -34,7 +34,9 @@ export class Game extends Scene
     }
 
     create ()
-    {
+    {   
+        this.gameInput = new GameInput(this);
+
         //world stuff
         this.physics.world.setBounds(0, 0, 3000, 600);
         this.physics.world.gravity.set(0,0);
@@ -50,7 +52,7 @@ export class Game extends Scene
 
         buttonBg.on('pointerdown', () => {
             this.plane.sprite.setVisible(true);
-            (this.plane.sprite.body as Phaser.Physics.Arcade.Body).setVelocity(1000, -300);
+            (this.plane.sprite.body as Phaser.Physics.Arcade.Body).setVelocity(500, -400);
             this.cameras.main.startFollow(this.plane.sprite);
             this.launchButton.destroy();
         });
@@ -59,12 +61,13 @@ export class Game extends Scene
         this.altitudeText = this.add.text(780, 50, 'Altitude: 0m', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
         this.distanceText = this.add.text(780, 20, 'Distance: 0m', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
         this.scoreText = this.add.text(20, 20, 'Score: 0', {fontSize: '24px', color: '#ffffff'}).setOrigin(0, 0).setScrollFactor(0);
-        
+        this.velocityText = this.add.text(780, 80, 'Velocity: 0', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
 
 
         //plane stuff
-        this.plane = new Glider(this, 400, 300, 'plane');
+        this.plane = new Glider(this, 0, 500, 'plane');
         this.plane.sprite.setVisible(false);
+        
 
         this.physics.add.collider(this.plane.sprite, this.floor, () => {this.isOnGround = true;});
 
@@ -86,12 +89,6 @@ export class Game extends Scene
             this.scoreText.setText(`Score: ${this.score}`);
         });
 
-        //input
-        this.AKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-        this.SKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-        this.LeftKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
-        this.RightKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
-
 
         
 
@@ -102,15 +99,21 @@ export class Game extends Scene
         if (this.plane.sprite.visible) {
             
             //world stuff
+            const body = this.plane.sprite.body as Phaser.Physics.Arcade.Body;
+
             const distance = Math.max(0, this.plane.sprite.x - this.startX);
             const altitude = -this.plane.sprite.y + this.startY;
+            const velocity = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
             
             this.altitudeText.setText(`Altitude: ${Math.floor(altitude)}m`);
             this.distanceText.setText(`Distance: ${Math.floor(distance)}m`);
+            this.velocityText.setText(`Velocity: ${Math.floor(velocity)}`);
             this.scoreText.setText(`Score: ${this.score}`);
             
-            const body = this.plane.sprite.body as Phaser.Physics.Arcade.Body;
-
+            
+            
+            
+            this.plane.handleInput(this.gameInput.isThrusting());
 
             const dt = delta / 1000;
             this.plane.update(dt);
