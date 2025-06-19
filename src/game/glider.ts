@@ -7,6 +7,10 @@ export class Glider {
 
     private thrustForce = 200;
     private isThrusting = false;
+
+    private maxFuel = 100;
+    private currentFuel = 100;
+    private fuelConsumptionRate = 30;
     
     private readonly MAX_DRAG = 0.97;
     private readonly BASE_DRAG = 0.995;
@@ -25,7 +29,7 @@ export class Glider {
     }
 
     handleInput(thrustPressed: boolean) {
-        this.isThrusting = thrustPressed;
+        this.isThrusting = thrustPressed && this.currentFuel > 0;
     }
 
     update(dt: number) {
@@ -49,6 +53,8 @@ export class Glider {
         const velAngle = Math.atan2(vy, vx);
         this.angle += (velAngle - this.angle)* this.ROTATION_SMOOTHING *dt;
         if (this.isThrusting) {
+            //fuel
+            this.currentFuel = Math.max(0, this.currentFuel - this.fuelConsumptionRate * dt);
 
             const newAngle = velAngle - this.THRUST_ROTATION_FORCE * dt;
             vx = Math.cos(newAngle) * speed;
@@ -76,6 +82,14 @@ export class Glider {
 
         //final set
         this.body.setVelocity((vx + thrustX*dt) * drag, (vy + thrustY * dt + gravity*dt + lift*dt) * drag);
+    }
+
+    getCurrentFuel(): number {
+        return this.currentFuel;
+    }
+
+    getMaxFuel(): number {
+        return this.maxFuel;
     }
 
 }

@@ -30,6 +30,7 @@ export class Intro extends Scene{
                 skipText.setText('Click to continue');
                 currentState = 1;
             } else {
+                
                 this.scene.start('Game');
             }
         });

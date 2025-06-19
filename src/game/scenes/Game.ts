@@ -2,6 +2,7 @@ import { Scene } from 'phaser';
 import { Glider } from '../glider';
 import { ScoreModifier } from '../scoremodifier';
 import { GameInput } from '../gameinput';
+import { GameUI } from '../gameui';
 
 
 export class Game extends Scene
@@ -13,10 +14,7 @@ export class Game extends Scene
     private launchButton: Phaser.GameObjects.Container;
     private isOnGround: boolean = false;
 
-    private altitudeText: Phaser.GameObjects.Text;
-    private distanceText: Phaser.GameObjects.Text;
-    private scoreText: Phaser.GameObjects.Text;
-    private velocityText: Phaser.GameObjects.Text;
+    private ui: GameUI;
 
     private startX: number = 100;
     private startY: number = 572;
@@ -36,12 +34,13 @@ export class Game extends Scene
     create ()
     {   
         this.gameInput = new GameInput(this);
+        this.ui = new GameUI(this);
 
         //world stuff
         this.physics.world.setBounds(0, 0, 3000, 600);
         this.physics.world.gravity.set(0,0);
 
-        this.add.rectangle(0, 0, 3000, 600, 0x028af8).setOrigin(0, 0);
+        // this.add.rectangle(0, 0, 3000, 600, 0x028af8).setOrigin(0, 0);
 
         this.floor = this.add.rectangle(0, 580, 3000, 20, 0x00ff00).setOrigin(0, 0);
         this.physics.add.existing(this.floor, true);
@@ -58,10 +57,7 @@ export class Game extends Scene
         });
 
 
-        this.altitudeText = this.add.text(780, 50, 'Altitude: 0m', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
-        this.distanceText = this.add.text(780, 20, 'Distance: 0m', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
-        this.scoreText = this.add.text(20, 20, 'Score: 0', {fontSize: '24px', color: '#ffffff'}).setOrigin(0, 0).setScrollFactor(0);
-        this.velocityText = this.add.text(780, 80, 'Velocity: 0', {fontSize: '24px', color: '#ffffff'}).setOrigin(1, 0).setScrollFactor(0);
+        //game ui
 
 
         //plane stuff
@@ -86,7 +82,6 @@ export class Game extends Scene
             const modifier: ScoreModifier = container.getData('modifier');
             this.score = modifier.calculateScore(this.score);
             modifier.destroy();
-            this.scoreText.setText(`Score: ${this.score}`);
         });
 
 
@@ -105,11 +100,8 @@ export class Game extends Scene
             const altitude = -this.plane.sprite.y + this.startY;
             const velocity = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
             
-            this.altitudeText.setText(`Altitude: ${Math.floor(altitude)}m`);
-            this.distanceText.setText(`Distance: ${Math.floor(distance)}m`);
-            this.velocityText.setText(`Velocity: ${Math.floor(velocity)}`);
-            this.scoreText.setText(`Score: ${this.score}`);
             
+            this.ui.update(distance, altitude, velocity, this.score, this.plane.getCurrentFuel() / this.plane.getMaxFuel());
             
             
             
