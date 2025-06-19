@@ -18,7 +18,7 @@ export class Menu extends Scene {
 
         this.title = this.add.text(400, 100, "Plane Game", {fontSize: '64px', color: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
     
-        this.menuButton(400, 300, 'Play!', () => {this.scene.start('Game');});
+        this.menuButton(400, 300, 'New Game', () => {this.scene.start('Intro');});
     
     }
 

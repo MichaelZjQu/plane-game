@@ -11,7 +11,7 @@ export class Glider {
     private readonly MAX_DRAG = 0.97;
     private readonly BASE_DRAG = 0.995;
     private readonly ROTATION_SMOOTHING = 6.0;
-    private readonly THRUST_ROTATION_FORCE = 1.2;
+    private readonly THRUST_ROTATION_FORCE = 2.0;
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
         this.sprite = scene.physics.add.sprite(x, y, texture);
@@ -60,10 +60,6 @@ export class Glider {
         }
 
         this.sprite.rotation = this.angle;
-
-        
-        
-
         
 
         
