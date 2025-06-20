@@ -53,6 +53,7 @@ export class Game extends Scene
             this.plane.sprite.setVisible(true);
             (this.plane.sprite.body as Phaser.Physics.Arcade.Body).setVelocity(500, -400);
             this.cameras.main.startFollow(this.plane.sprite);
+            this.cameras.main.setScroll(0, 0);
             this.launchButton.destroy();
         });
 
@@ -82,6 +83,8 @@ export class Game extends Scene
             const modifier: ScoreModifier = container.getData('modifier');
             this.score = modifier.calculateScore(this.score);
             modifier.destroy();
+
+            this.plane.boost(0.4, 200);
         });
 
 
@@ -99,6 +102,13 @@ export class Game extends Scene
             const distance = Math.max(0, this.plane.sprite.x - this.startX);
             const altitude = -this.plane.sprite.y + this.startY;
             const velocity = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
+
+            if(altitude < 272 ){
+                this.cameras.main.setLerp(1, 0);
+            }
+            else{
+                this.cameras.main.setLerp(1, 1);
+            }
             
             
             this.ui.update(distance, altitude, velocity, this.score, this.plane.getCurrentFuel() / this.plane.getMaxFuel());

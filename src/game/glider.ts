@@ -11,6 +11,7 @@ export class Glider {
     private maxFuel = 100;
     private currentFuel = 100;
     private fuelConsumptionRate = 30;
+
     
     private readonly MAX_DRAG = 0.97;
     private readonly BASE_DRAG = 0.995;
@@ -32,11 +33,29 @@ export class Glider {
         this.isThrusting = thrustPressed && this.currentFuel > 0;
     }
 
+    boost(angle : number, velocity: number) {
+        const vx = this.body.velocity.x;
+        const vy = this.body.velocity.y;
+        const speed = Math.hypot(vx, vy);
+
+        const velAngle = Math.atan2(vy, vx);
+
+        const newAngle = velAngle - angle;
+        const newSpeed = speed + velocity;
+
+        const newVx = Math.cos(newAngle) * newSpeed;
+        const newVy = Math.sin(newAngle) * newSpeed;
+        
+        this.body.setVelocity(newVx, newVy);
+        this.angle = newAngle;
+
+    }
+
     update(dt: number) {
         let vx = this.body.velocity.x;
         let vy = this.body.velocity.y;
         const speed = Math.hypot(vx, vy);
-
+        
         const gravity = 300;
 
 
@@ -67,10 +86,6 @@ export class Glider {
 
         this.sprite.rotation = this.angle;
         
-
-        
-
-
         //thrust!
         
         let thrustX = 0;
