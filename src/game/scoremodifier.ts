@@ -14,10 +14,21 @@ export class ScoreModifier {
         this.operation = operation;
         this.color = color;
 
-        const square = scene.add.rectangle(0, 0, 30, 30, this.color).setOrigin(0.5);
-        const text = scene.add.text(0, 0, `${this.operation}${this.value}`, { fontSize: '16px', color: '#000' }).setOrigin(0.5, 0.5);
+        let displayObject: Phaser.GameObjects.GameObject;
 
-        this.container = scene.add.container(x, y, [square, text]);
+        if (operation === '+') {
+            // Random skyberry for positive modifiers
+            const skyberryNum = Phaser.Math.Between(1, 3);
+            displayObject = scene.add.sprite(0, 0, `skyberry_${skyberryNum}`).setOrigin(0.5).setScale(0.4);
+        } else if (operation === '-') {
+            const sourberryNum = Phaser.Math.Between(1, 3);
+            displayObject = scene.add.sprite(0, 0, `sourberry_${sourberryNum}`).setOrigin(0.5).setScale(0.4);
+        } else {
+            displayObject = scene.add.rectangle(0, 0, 30, 30, this.color).setOrigin(0.5);
+        }
+
+
+        this.container = scene.add.container(x, y, [displayObject]);
         this.container.setData('modifier', this);
 
         scene.physics.world.enable(this.container);

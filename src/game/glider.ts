@@ -7,6 +7,7 @@ export class Glider {
 
     private thrustForce = 200;
     private isThrusting = false;
+    private isOnGround = false;
 
     private maxFuel = 100;
     private currentFuel = 100;
@@ -55,7 +56,7 @@ export class Glider {
         let vx = this.body.velocity.x;
         let vy = this.body.velocity.y;
         const speed = Math.hypot(vx, vy);
-        
+
         const gravity = 300;
 
 
@@ -95,8 +96,23 @@ export class Glider {
             thrustY = Math.sin(this.angle) * this.thrustForce;
         }
 
+        let newVx = (vx + thrustX*dt) * drag
+        let newVy = (vy + thrustY * dt + gravity*dt + lift*dt) * drag
+
+        if(this.body.y >= 564){
+                this.body.y = 564;
+                newVx *= 0.97;
+                if(Math.abs(newVx) < 10){
+                    newVx = 0; 
+                }
+
+                if (newVy > 0) {
+                    newVy = 0; // no up when on ground
+                }
+            }
+
         //final set
-        this.body.setVelocity((vx + thrustX*dt) * drag, (vy + thrustY * dt + gravity*dt + lift*dt) * drag);
+        this.body.setVelocity(newVx, newVy);
     }
 
     getCurrentFuel(): number {

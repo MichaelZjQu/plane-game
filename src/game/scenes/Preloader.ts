@@ -29,12 +29,25 @@ export class Preloader extends Scene
     {
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
+        this.load.image('menu_logo', 'menu_logo.png');
+        
         this.load.image('plane', 'plane.png');
+        
         this.load.image('intro', 'intro_comic.png')
+
+
 
         this.load.image('city_1', 'city_bg_1.png');
         this.load.image('city_2', 'city_bg_2.png');
-        // this.load.image('logo', 'logo.png');
+        this.load.image('city_3', 'city_bg_3.png');
+        this.load.image('cloud_1', 'city_cloud.png');
+        //berries
+        this.load.image('skyberry_1', 'skyberry_1.png');
+        this.load.image('skyberry_2', 'skyberry_2.png');
+        this.load.image('skyberry_3', 'skyberry_3.png');
+        this.load.image('sourberry_1', 'sourberry_1.png');
+        this.load.image('sourberry_2', 'sourberry_2.png');
+        this.load.image('sourberry_3', 'sourberry_3.png');
     }
 
     create ()

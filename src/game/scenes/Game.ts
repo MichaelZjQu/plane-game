@@ -42,9 +42,6 @@ export class Game extends Scene
 
         // this.add.rectangle(0, 0, 3000, 600, 0x028af8).setOrigin(0, 0);
 
-        this.floor = this.add.rectangle(0, 580, 3000, 20, 0x00ff00).setOrigin(0, 0);
-        this.physics.add.existing(this.floor, true);
-
         this.launchButton = this.add.container(400, 500).setScrollFactor(0);
         const buttonBg = this.add.rectangle(0, 0, 160, 40, 0x00ff00).setInteractive();
         this.launchButton.add([buttonBg, this.add.text(0, 0, 'Launch', {fontSize: '20px', color: '#000'}).setOrigin(0.5)])
@@ -65,8 +62,6 @@ export class Game extends Scene
         this.plane = new Glider(this, 0, 500, 'plane');
         this.plane.sprite.setVisible(false);
         
-
-        this.physics.add.collider(this.plane.sprite, this.floor, () => {this.isOnGround = true;});
 
         //score calc
         this.scoreSquares = this.add.group();
@@ -124,12 +119,7 @@ export class Game extends Scene
 
             
             
-            if(this.isOnGround){
-                body.setVelocityX(body.velocity.x * 0.97)
-                if(Math.abs(body.velocity.x) < 10){
-                    body.setVelocityX(0);
-                }
-            }
+            
 
             this.isOnGround = false;
             
