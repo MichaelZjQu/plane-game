@@ -2,6 +2,7 @@ import { Boot } from './scenes/Boot';
 import { Game as MainGame } from './scenes/Game';
 import { Menu } from './scenes/Menu';
 import { Intro } from './scenes/Intro';
+import { Upgrade } from './scenes/Upgrade';
 import { AUTO, Game } from 'phaser';
 import { Preloader } from './scenes/Preloader';
 
@@ -27,6 +28,7 @@ const config: Phaser.Types.Core.GameConfig = {
         Intro,
         Menu,
         MainGame,
+        Upgrade
         
     ]
     

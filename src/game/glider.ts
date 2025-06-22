@@ -21,6 +21,10 @@ export class Glider {
     private readonly ROTATION_SMOOTHING = 6.0;
     private readonly THRUST_ROTATION_FORCE = 2.0;
 
+    private dragMultiplier = 1;
+    private weightMultiplier = 1;
+    private fuelMultiplier = 1;
+
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
         this.sprite = scene.physics.add.sprite(x, y, texture).setScale(0.15);
 
@@ -69,16 +73,32 @@ export class Glider {
 
     }
 
+    public setDragMultiplier(multiplier: number): void {
+        this.dragMultiplier = multiplier;
+    }
+
+    public setWeightMultiplier(multiplier: number): void {
+        this.weightMultiplier = multiplier;
+    }
+
+    public setFuelMultiplier(multiplier: number): void {
+        this.fuelMultiplier = multiplier;
+        this.maxFuel = 100 * multiplier;
+        this.currentFuel = this.maxFuel;
+    }
+
     update(dt: number) {
         let vx = this.body.velocity.x;
         let vy = this.body.velocity.y;
         const speed = Math.hypot(vx, vy);
 
-        const gravity = 300;
 
+        //upgrade cacs
 
-        //drag
-        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - speed/this.dragDenominator);
+        const drag = Math.max(this.MAX_DRAG, (this.BASE_DRAG - speed/this.dragDenominator) * this.dragMultiplier);
+
+        const gravity = 300 * this.weightMultiplier;
+
 
         //lift
         const optimalAngle = -Math.PI / 6;
@@ -140,4 +160,7 @@ export class Glider {
         return this.maxFuel;
     }
 
+    public launched(): boolean {
+        return this.isLaunched;
+    }
 }
