@@ -9,9 +9,11 @@ export class Intro extends Scene{
     create(){
         let currentState = 0;
 
+        //initial
+        this.cameras.main.setBackgroundColor('#ffffff');
+
         const topLeft = this.add.graphics().fillStyle(0xffffff).fillTriangle(0, 0, 675, 0, 0, 700);
         const bottomRight = this.add.graphics().fillStyle(0xffffff).fillTriangle(0, 700, 800, 700, 800, -130);
-        
         
         const topLeftImage = this.add.image(400, 300, 'intro').setOrigin(0.5);
         const bottomRightImage = this.add.image(400, 300, 'intro').setOrigin(0.5);
@@ -20,16 +22,16 @@ export class Intro extends Scene{
 
         bottomRightImage.setAlpha(0.1);
 
-        const skipText = this.add.text(400, 550, 'Click to continue', {fontSize: '18px', color: '#ffffff'}).setOrigin(0.5);
+        const skipText = this.add.text(400, 550, 'Click to continue', {fontSize: '18px', color: '#000000'}).setOrigin(0.5);
 
         const allElements = [topLeftImage, bottomRightImage, skipText, topLeft, bottomRight];
         allElements.forEach(element => element.setAlpha(0));
 
-        // fade anim
         this.tweens.add({
             targets: [topLeftImage, skipText, topLeft, bottomRight],
             alpha: { from: 0, to: 1 },
             duration: 1000,
+            delay: 0, 
             ease: 'Power2.easeOut'
         });
 
@@ -37,10 +39,10 @@ export class Intro extends Scene{
             targets: bottomRightImage,
             alpha: { from: 0, to: 0.1 },
             duration: 1000,
+            delay: 0,
             ease: 'Power2.easeOut'
         });
 
-        
         this.input.on('pointerdown', () => {
             if (currentState === 0) {
                 this.tweens.add({
@@ -57,16 +59,20 @@ export class Intro extends Scene{
                     ease: 'Power2.easeOut'
                 });
 
-                skipText.setText('Click to continue to game');
+                skipText.y -= 500;
                 currentState = 1;
             } else {
+                
                 this.tweens.add({
                     targets: allElements,
                     alpha: 0,
                     duration: 800,
                     ease: 'Power2.easeIn',
                     onComplete: () => {
-                        this.scene.start('Game');
+                        
+                        this.time.delayedCall(300, () => {
+                            this.scene.start('Game');
+                        });
                     }
                 });
             }
@@ -76,8 +82,5 @@ export class Intro extends Scene{
         this.input.keyboard!.on('keydown', () => {
             this.input.emit('pointerdown');
         });
-
     }
-
-
 }

@@ -7,11 +7,13 @@ export class Glider {
 
     private thrustForce = 200;
     private isThrusting = false;
-    private isOnGround = false;
+    private isLaunched = false;
 
     private maxFuel = 100;
     private currentFuel = 100;
     private fuelConsumptionRate = 30;
+
+    private dragDenominator = 100000;
 
     
     private readonly MAX_DRAG = 0.97;
@@ -30,8 +32,23 @@ export class Glider {
         this.angle = this.sprite.rotation;
     }
 
+    public launch(power: number, angle: number): void {
+        this.sprite.setVisible(true);
+        this.isLaunched = true; 
+        
+        //componenets
+        const radians = Phaser.Math.DegToRad(angle);
+        const vx = Math.cos(radians) * power;
+        const vy = Math.sin(radians) * power;
+        
+        this.body.setVelocity(vx, vy);
+        
+        this.angle = radians;
+        this.sprite.rotation = this.angle;
+    }
+
     handleInput(thrustPressed: boolean) {
-        this.isThrusting = thrustPressed && this.currentFuel > 0;
+        this.isThrusting = thrustPressed && this.currentFuel > 0 && this.isLaunched;
     }
 
     boost(angle : number, velocity: number) {
@@ -61,7 +78,7 @@ export class Glider {
 
 
         //drag
-        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - speed/100000);
+        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - speed/this.dragDenominator);
 
         //lift
         const optimalAngle = -Math.PI / 6;

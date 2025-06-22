@@ -3,25 +3,22 @@ import { Glider } from '../glider';
 import { ScoreModifier } from '../scoremodifier';
 import { GameInput } from '../gameinput';
 import { GameUI } from '../gameui';
+import { LaunchMechanism } from '../launchmechanism';
+import { BerryManager } from '../berrymanager';
 
 
 export class Game extends Scene
 {   
     private gameInput: GameInput;
-
     private plane: Glider;
-    private launchButton: Phaser.GameObjects.Container;
-
     private ui: GameUI;
+    private berryManager: BerryManager;
+    private launchMechanism: LaunchMechanism;
 
     private startX: number = 100;
     private startY: number = 572;
     private score: number = 0;
-
     private scoreSquares!: Phaser.GameObjects.Group;
-
-
-    
 
 
     constructor ()
@@ -38,37 +35,23 @@ export class Game extends Scene
         this.physics.world.setBounds(0, 0, 3000, 600);
         this.physics.world.gravity.set(0,0);
 
-
-        this.launchButton = this.add.container(400, 500).setScrollFactor(0);
-        const buttonBg = this.add.rectangle(0, 0, 160, 40, 0x00ff00).setInteractive();
-        this.launchButton.add([buttonBg, this.add.text(0, 0, 'Launch', {fontSize: '20px', color: '#000'}).setOrigin(0.5)])
-
-        buttonBg.on('pointerdown', () => {
-            this.plane.sprite.setVisible(true);
-            (this.plane.sprite.body as Phaser.Physics.Arcade.Body).setVelocity(500, -400);
-            this.cameras.main.startFollow(this.plane.sprite);
-            this.cameras.main.setScroll(0, 0);
-            this.launchButton.destroy();
-        });
-
-
-        //game ui
-
-
-        //plane stuff
-        this.plane = new Glider(this, 0, 500, 'plane');
-        this.plane.sprite.setVisible(false);
         
 
         //score calc
         this.scoreSquares = this.add.group();
+        this.berryManager = new BerryManager(this, this.scoreSquares);
 
-        for(let i = 0; i < 20; i++){
-            const x = Phaser.Math.Between(400, 2800);
-            const y = Phaser.Math.Between(100, 500);
-            const modifier = ScoreModifier.createRandom(this, x, y);
-            this.scoreSquares.add(modifier.container);
-        }
+        //launch
+        this.launchMechanism = new LaunchMechanism(this, (power, angle) => {
+            this.plane.launch(power, angle);      
+        });
+
+        //plane stuff
+        this.plane = new Glider(this, 0, 500, 'plane');
+
+        this.cameras.main.startFollow(this.plane.sprite);
+        this.cameras.main.setScroll(0, 0);
+
 
         this.physics.add.overlap(this.plane.sprite, this.scoreSquares, (_plane, scoreSquare) => {
             const container = scoreSquare as Phaser.GameObjects.Container;
@@ -76,18 +59,17 @@ export class Game extends Scene
             this.score = modifier.calculateScore(this.score);
             modifier.destroy();
 
-            this.plane.boost(0.4, 200);
+            //maybe no boost for berries
+            // this.plane.boost(0.4, 200);
         });
-
-
-        
-
-        
     }
 
     update(_time: number, delta: number) {
+        if (this.launchMechanism) {
+           this.launchMechanism.update();
+        }
+        
         if (this.plane.sprite.visible) {
-            
             //world stuff
             const body = this.plane.sprite.body as Phaser.Physics.Arcade.Body;
 
@@ -102,10 +84,8 @@ export class Game extends Scene
                 this.cameras.main.setLerp(1, 1);
             }
             
-            
+            this.berryManager.update(this.plane.sprite.x, this.plane.sprite.y, this.cameras.main.scrollX, this.cameras.main.scrollY);
             this.ui.update(distance, altitude, velocity, this.score, this.plane.getCurrentFuel() / this.plane.getMaxFuel());
-            
-            
             
             this.plane.handleInput(this.gameInput.isThrusting());
 

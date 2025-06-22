@@ -132,14 +132,14 @@ export class GameUI {
     public update(dist: number, alt: number, vel: number, score: number, fuel: number): void{
         this.manageClouds();
 
-        this.updateTextSprites(this.distanceContainer, `Distance\n${Math.floor(dist)}m`, 0.1);
-        this.updateTextSprites(this.altitudeContainer, `Altitude\n${Math.floor(alt)}m`, 0.1);            
-        this.updateTextSprites(this.velocityContainer, `Velocity\n${Math.floor(vel)}`, 0.1);
+        this.updateTextSprites(this.distanceContainer, `Distance\n${Math.floor(dist / 10)}m`, 0.1);
+        this.updateTextSprites(this.altitudeContainer, `Altitude\n${Math.floor(alt / 10)}m`, 0.1);            
+        this.updateTextSprites(this.velocityContainer, `Velocity\n${Math.floor(vel / 10)}`, 0.1);
 
         //fuel
         this.fuelText.setText(`Fuel: ${Math.floor(fuel * 100)}%`);
 
-        const fuelWidth = 196*fuel;
+        const fuelWidth = 156*fuel;
         this.fuelBarFill.setSize(fuelWidth, 16);
 
         if (fuel > 0.5) {

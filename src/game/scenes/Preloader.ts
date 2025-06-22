@@ -39,6 +39,8 @@ export class Preloader extends Scene
         
         this.load.image('intro', 'intro_comic.png')
 
+        this.load.image('upgrade_menu', 'workshop.png');
+
         this.load.image('feather_container', 'feather_container.png');
 
         this.load.image('city_1', 'city_bg_1.png');
