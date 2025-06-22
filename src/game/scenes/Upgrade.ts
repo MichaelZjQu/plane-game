@@ -135,6 +135,26 @@ export class Upgrade extends Scene {
             this.scene.start('Game', { upgrades: this.upgrades });
         });
 
+        // Add reset button
+        this.add.graphics()
+            .fillStyle(0xe74c3c, 0.95)
+            .fillRoundedRect(520, 530, 120, 40, 15)
+            .lineStyle(2, 0xc0392b)
+            .strokeRoundedRect(520, 530, 120, 40, 15);
+
+        const resetButton = this.add.rectangle(580, 550, 120, 40, 0x000000, 0)
+            .setInteractive({ useHandCursor: true });
+
+        this.add.text(580, 550, 'RESET UPGRADES', {
+            fontSize: '14px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        resetButton.on('pointerdown', () => {
+            this.resetAllUpgrades();
+        });
+
         const data = this.scene.settings.data as any;
         if (data?.money) {
             this.playerMoney += data.money; 
@@ -184,5 +204,22 @@ export class Upgrade extends Scene {
 
     private updateMoneyDisplay(): void {
         this.moneyText.setText(`Money: $${this.playerMoney}`);
+    }
+
+    private resetAllUpgrades(): void {
+        this.upgrades = {
+            reducedDrag: 0,
+            berryScore: 0,
+            berryMagnet: 0,
+            reducedWeight: 0,
+            launchPower: 0,
+            easierLaunch: 0,
+            moreFuel: 0,
+            berryBoost: 0
+        };
+        this.playerMoney = 0;
+        this.saveGameData();
+        this.scene.restart();
+        console.log('All upgrades and money reset!');
     }
 }
