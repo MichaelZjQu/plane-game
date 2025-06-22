@@ -10,9 +10,7 @@ export class Game extends Scene
     private gameInput: GameInput;
 
     private plane: Glider;
-    private floor: Phaser.GameObjects.Rectangle;
     private launchButton: Phaser.GameObjects.Container;
-    private isOnGround: boolean = false;
 
     private ui: GameUI;
 
@@ -40,7 +38,6 @@ export class Game extends Scene
         this.physics.world.setBounds(0, 0, 3000, 600);
         this.physics.world.gravity.set(0,0);
 
-        // this.add.rectangle(0, 0, 3000, 600, 0x028af8).setOrigin(0, 0);
 
         this.launchButton = this.add.container(400, 500).setScrollFactor(0);
         const buttonBg = this.add.rectangle(0, 0, 160, 40, 0x00ff00).setInteractive();
@@ -113,16 +110,7 @@ export class Game extends Scene
             this.plane.handleInput(this.gameInput.isThrusting());
 
             const dt = delta / 1000;
-            this.plane.update(dt);
-        
-           
-
-            
-            
-            
-
-            this.isOnGround = false;
-            
+            this.plane.update(dt);            
         }
     }
 }

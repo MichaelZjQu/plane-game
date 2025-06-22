@@ -22,16 +22,53 @@ export class Intro extends Scene{
 
         const skipText = this.add.text(400, 550, 'Click to continue', {fontSize: '18px', color: '#ffffff'}).setOrigin(0.5);
 
+        const allElements = [topLeftImage, bottomRightImage, skipText, topLeft, bottomRight];
+        allElements.forEach(element => element.setAlpha(0));
+
+        // fade anim
+        this.tweens.add({
+            targets: [topLeftImage, skipText, topLeft, bottomRight],
+            alpha: { from: 0, to: 1 },
+            duration: 1000,
+            ease: 'Power2.easeOut'
+        });
+
+        this.tweens.add({
+            targets: bottomRightImage,
+            alpha: { from: 0, to: 0.1 },
+            duration: 1000,
+            ease: 'Power2.easeOut'
+        });
+
         
         this.input.on('pointerdown', () => {
             if (currentState === 0) {
-                topLeftImage.setAlpha(0.1);
-                bottomRightImage.setAlpha(1);
-                skipText.setText('Click to continue');
+                this.tweens.add({
+                    targets: topLeftImage,
+                    alpha: 0.1,
+                    duration: 800,
+                    ease: 'Power2.easeOut'
+                });
+                
+                this.tweens.add({
+                    targets: bottomRightImage,
+                    alpha: 1,
+                    duration: 800,
+                    ease: 'Power2.easeOut'
+                });
+
+                skipText.setText('Click to continue to game');
                 currentState = 1;
             } else {
-                
-                this.scene.start('Game');
+                this.tweens.add({
+                    targets: allElements,
+                    alpha: 0,
+                    duration: 800,
+                    ease: 'Power2.easeIn',
+                    onComplete: () => {
+                        this.scene.start('Game');
+                    }
+                });
             }
         });
 

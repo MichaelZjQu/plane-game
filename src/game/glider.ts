@@ -20,7 +20,7 @@ export class Glider {
     private readonly THRUST_ROTATION_FORCE = 2.0;
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
-        this.sprite = scene.physics.add.sprite(x, y, texture);
+        this.sprite = scene.physics.add.sprite(x, y, texture).setScale(0.15);
 
 
         this.body = this.sprite.body as Phaser.Physics.Arcade.Body;
@@ -99,8 +99,8 @@ export class Glider {
         let newVx = (vx + thrustX*dt) * drag
         let newVy = (vy + thrustY * dt + gravity*dt + lift*dt) * drag
 
-        if(this.body.y >= 564){
-                this.body.y = 564;
+        if(this.body.y >= 520){
+                this.body.y = 520;
                 newVx *= 0.97;
                 if(Math.abs(newVx) < 10){
                     newVx = 0; 
