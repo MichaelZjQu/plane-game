@@ -13,6 +13,7 @@ const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
     width: 800,
     height: 600,
+    title: "A Sparrow's Quest",
     parent: 'game-container',
     backgroundColor: '#028af8',
     physics: {
