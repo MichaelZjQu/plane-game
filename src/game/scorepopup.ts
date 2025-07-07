@@ -31,7 +31,7 @@ export class ScorePopup {
         const stats = [
             { text: `Distance: ${Math.floor(distance / 10)}m`, color: '#e67e22' },
             { text: `Max Altitude: ${Math.floor(maxAltitude / 10)}m`, color: '#9b59b6' },
-            { text: `Berry Bonus: ${score}`, color: '#27ae60' }
+            { text: `Berry Score: ${score}`, color: '#27ae60' }
         ];
 
         // stat graphics

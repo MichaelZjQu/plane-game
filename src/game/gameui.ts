@@ -39,13 +39,13 @@ export class GameUI {
         //floor
         this.road = this.scene.add.tileSprite(0, 522, 800, 78, 'road').setOrigin(0, 0).setScrollFactor(0);
         
-        this.scene.add.image(140, 60, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.6).setDepth(1);
-        this.scene.add.image(400, 60, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.6).setDepth(1);
-        this.scene.add.image(660, 60, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.6).setDepth(1);
+        this.scene.add.image(140, 80, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.4).setDepth(1);
+        this.scene.add.image(400, 80, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.4).setDepth(1);
+        this.scene.add.image(660, 80, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.4).setDepth(1);
 
-        this.distanceContainer = this.createTextSprites(150, 60, 'Distance\n0m', 0.5, 0.5, 0.1).setDepth(1);
-        this.velocityContainer = this.createTextSprites(410, 60, 'Velocity\n0', 0.5, 0.5, 0.1).setDepth(1);
-        this.altitudeContainer = this.createTextSprites(670, 60, 'Altitude\n0m', 0.5, 0.5, 0.1).setDepth(1);
+        this.distanceContainer = this.createTextSprites(150, 75, 'Distance\n0m', 0.5, 0.5, 0.1).setDepth(1);
+        this.velocityContainer = this.createTextSprites(410, 75, 'Velocity\n0', 0.5, 0.5, 0.1).setDepth(1);
+        this.altitudeContainer = this.createTextSprites(670, 75, 'Altitude\n0m', 0.5, 0.5, 0.1).setDepth(1);
 
         const roundedRect = this.scene.add.graphics().setScrollFactor(0).setDepth(2);
         roundedRect.fillStyle(0x000000, 0.7); 

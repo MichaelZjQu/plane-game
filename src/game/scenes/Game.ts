@@ -63,7 +63,6 @@ export class Game extends Scene
         //launch
         this.launchMechanism = new LaunchMechanism(this, (power, angle) => {
             this.plane.launch(power, angle);
-            // Reset movement tracking when launched
             this.lastPosition = { x: this.plane.sprite.x, y: this.plane.sprite.y };
             this.timeSinceMovement = 0;
             this.gameEnded = false;
@@ -85,9 +84,7 @@ export class Game extends Scene
             // this.plane.boost(0.4, 200);
         });
 
-        // Load persistent upgrades from localStorage
-        this.loadUpgrades();
-        
+        this.loadUpgrades();       
         this.applyUpgrades();
     }
 
@@ -152,7 +149,7 @@ export class Game extends Scene
 
     private applyUpgrades(): void {
         if (this.upgrades.reducedDrag > 0) {
-            this.plane.setDragMultiplier(1 + (this.upgrades.reducedDrag * 0.1));
+            this.plane.reduceDrag(this.upgrades.reducedDrag * 100000);
         }
 
         if (this.upgrades.reducedWeight > 0) {

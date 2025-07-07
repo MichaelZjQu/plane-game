@@ -6,7 +6,8 @@
         "dev": "node log.js dev & rollup --watch --config rollup/rollup.config.dev.mjs --no-treeshake",
         "build": "node log.js build & rollup --config rollup/rollup.config.prod.mjs",
         "dev-nolog": "rollup --watch --config rollup/rollup.config.dev.mjs --no-treeshake",
-        "build-nolog": "rollup --config rollup/rollup.config.prod.mjs"
+        "build-nolog": "rollup --config rollup/rollup.config.prod.mjs",
+        "deploy": "gh-pages -d dist"
     },
     "repository": {
         "type": "git",

@@ -21,7 +21,6 @@ export class Glider {
     private readonly ROTATION_SMOOTHING = 6.0;
     private readonly THRUST_ROTATION_FORCE = 2.0;
 
-    private dragMultiplier = 1;
     private weightMultiplier = 1;
     private fuelMultiplier = 1;
 
@@ -73,8 +72,8 @@ export class Glider {
 
     }
 
-    public setDragMultiplier(multiplier: number): void {
-        this.dragMultiplier = multiplier;
+    public reduceDrag(amount: number): void {
+        this.dragDenominator += amount;
     }
 
     public setWeightMultiplier(multiplier: number): void {
@@ -83,7 +82,7 @@ export class Glider {
 
     public setFuelMultiplier(multiplier: number): void {
         this.fuelMultiplier = multiplier;
-        this.maxFuel = 100 * multiplier;
+        this.maxFuel = 100 * this.fuelMultiplier;
         this.currentFuel = this.maxFuel;
     }
 
@@ -93,9 +92,9 @@ export class Glider {
         const speed = Math.hypot(vx, vy);
 
 
-        //upgrade cacs
+        //upgrade calcs
 
-        const drag = Math.max(this.MAX_DRAG, (this.BASE_DRAG - speed/this.dragDenominator) * this.dragMultiplier);
+        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - speed/this.dragDenominator);
 
         const gravity = 300 * this.weightMultiplier;
 

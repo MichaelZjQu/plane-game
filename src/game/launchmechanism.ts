@@ -17,32 +17,133 @@ export class LaunchMechanism {
     }
 
     private create(): void {
-        this.arc = this.scene.add.graphics().setScrollFactor(0);
+        this.arc = this.scene.add.graphics().setScrollFactor(0).setDepth(100);
         
-        this.arc.lineStyle(4, 0x00ff00, 1);
+        // red
+        this.arc.fillStyle(0xff0000, 0.8);
         this.arc.beginPath();
-        this.arc.arc(400, 500, 120, Math.PI, 0, false); 
+        this.arc.arc(400, 600, 120, Math.PI, 2 * Math.PI, false);  
+        this.arc.fillPath();
+
+        // green
+        this.arc.fillStyle(0x00ff00, 0.9);
+        this.arc.beginPath();
+        this.arc.arc(400, 600, 120, Math.PI * 1.45, Math.PI * 1.55, false); 
+        this.arc.lineTo(400, 600);
+        this.arc.fillPath();
+
+        // yellow
+        this.arc.fillStyle(0xffff00, 0.9);
+        
+        this.arc.beginPath();
+        this.arc.arc(400, 600, 120, Math.PI * 1.55, Math.PI * 1.7, false);
+        this.arc.lineTo(400, 600);
+        this.arc.fillPath();
+        
+        this.arc.beginPath();
+        this.arc.arc(400, 600, 120, Math.PI * 1.3, Math.PI * 1.45, false);
+        this.arc.lineTo(400, 600);
+        this.arc.fillPath();
+
+        // outline
+        this.arc.lineStyle(4, 0x000000, 1);
+        this.arc.beginPath();
+        this.arc.arc(400, 600, 120, Math.PI, 2 * Math.PI, false);  
         this.arc.strokePath();
 
-        this.arc.lineStyle(6, 0xff0000, 1);
-        this.arc.beginPath();
-        this.arc.moveTo(400, 500); 
-        this.arc.lineTo(400, 380);  
-        this.arc.strokePath();
-
+        this.arc.lineStyle(2, 0x000000, 1);
         
-        this.indicator = this.scene.add.graphics().setScrollFactor(0);
-        this.indicator.fillStyle(0xffff00, 1);
-        this.indicator.fillCircle(400, 380, 8);
+        const angles = [1.3, 1.45, 1.55, 1.7];  
+        angles.forEach(multiplier => {
+            const angle = Math.PI * multiplier;
+            const x = 400 + Math.cos(angle) * 120;
+            const y = 600 + Math.sin(angle) * 120;
+            this.arc.beginPath();
+            this.arc.moveTo(400, 600);
+            this.arc.lineTo(x, y);
+            this.arc.strokePath();
+        });
 
-        
-        const clickArea = this.scene.add.rectangle(400, 450, 300, 200, 0x000000, 0)
-            .setInteractive()
-            .setScrollFactor(0);
+        this.indicator = this.scene.add.graphics().setScrollFactor(0).setDepth(101);
+        this.updateNeedle();
+
+        const instructionText = this.scene.add.text(400, 300, 'Click anywhere to launch!', {fontSize: '32px',color: '#ffffff',fontStyle: 'bold'}).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+
+        this.scene.tweens.add({targets: instructionText, alpha: 0, duration: 500, yoyo: true, repeat: -1});
+
+        const clickArea = this.scene.add.rectangle(400, 300, 800, 600, 0x000000, 0).setInteractive().setScrollFactor(0).setDepth(102);
         
         clickArea.on('pointerdown', () => {
+            instructionText.destroy();
             this.attemptLaunch();
         });
+    }
+
+    private updateNeedle(): void {
+        this.indicator.clear();
+        
+        const normalizedAngle = (this.angle + 90) / 180; 
+        const radians = Math.PI + (normalizedAngle * Math.PI);  
+        
+        const x = 400 + Math.cos(radians) * 110;
+        const y = 600 + Math.sin(radians) * 110;
+        
+        //needle
+        this.indicator.lineStyle(6, 0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(400, 600);
+        this.indicator.lineTo(x, y);
+        this.indicator.strokePath();
+        
+        const triangleSize = 12;
+        const triangleX1 = x + Math.cos(radians) * triangleSize;
+        const triangleY1 = y + Math.sin(radians) * triangleSize;
+        const triangleX2 = x + Math.cos(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY2 = y + Math.sin(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleX3 = x + Math.cos(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY3 = y + Math.sin(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        
+        this.indicator.fillStyle(0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(triangleX1, triangleY1);
+        this.indicator.lineTo(triangleX2, triangleY2);
+        this.indicator.lineTo(triangleX3, triangleY3);
+        this.indicator.closePath();
+        this.indicator.fillPath();
+    }
+
+    private flashNeedle(color: number): void {
+        // make needle indicate landing
+
+        this.indicator.clear();
+        
+        const normalizedAngle = (this.angle + 90) / 180;
+        const radians = Math.PI + (normalizedAngle * Math.PI);  
+        
+        const x = 400 + Math.cos(radians) * 110;
+        const y = 600 + Math.sin(radians) * 110;
+        
+        this.indicator.lineStyle(6, 0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(400, 600);
+        this.indicator.lineTo(x, y);
+        this.indicator.strokePath();
+        
+        const triangleSize = 12;
+        const triangleX1 = x + Math.cos(radians) * triangleSize;
+        const triangleY1 = y + Math.sin(radians) * triangleSize;
+        const triangleX2 = x + Math.cos(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY2 = y + Math.sin(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleX3 = x + Math.cos(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY3 = y + Math.sin(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        
+        this.indicator.fillStyle(0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(triangleX1, triangleY1);
+        this.indicator.lineTo(triangleX2, triangleY2);
+        this.indicator.lineTo(triangleX3, triangleY3);
+        this.indicator.closePath();
+        this.indicator.fillPath();
     }
 
     private attemptLaunch(): void {
@@ -50,48 +151,45 @@ export class LaunchMechanism {
 
         this.isActive = false;
 
-        //launch accuracy
-        const accuracy = Math.abs(this.angle);
         let power: number;
         let launchAngle: number;
+        let text: string;
 
-        if (accuracy <= 5) {
-            // perfect launch
+        if (this.angle >= -10 && this.angle <= 10) {
+            // good
             power = 600;
             launchAngle = -45;
-            this.flashIndicator(0x00ff00); // Green
-        } else if (accuracy <= 15) {
-            // okay launch
+            text = "Good Launch";
+        } else if ((this.angle >= -35 && this.angle < -10) || (this.angle > 10 && this.angle <= 35)) {
+            // ok
             power = 500;
             launchAngle = -40;
-            this.flashIndicator(0xffff00); // Yellow
+            text = "Okay Launch";
         } else {
-            // bad launch
+            // bad
             power = 400;
             launchAngle = -30;
-            this.flashIndicator(0xff0000); // Red
+            text = "Bad Launch";
         }
 
-        
+        this.flashNeedle(0x000000);
+
+        const launchText = this.scene.add.text(400, 300, text, {
+            fontSize: '48px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+
         this.scene.time.delayedCall(200, () => {
+            launchText.destroy();
             this.onLaunch(power, launchAngle);
             this.destroy();
         });
     }
 
-    private flashIndicator(color: number): void {
-        this.indicator.clear();
-        this.indicator.fillStyle(color, 1);
-        const radians = Phaser.Math.DegToRad(this.angle - 90);
-        const x = 400 + Math.cos(radians) * 120;
-        const y = 500 + Math.sin(radians) * 120;
-        this.indicator.fillCircle(x, y, 12); 
-    }
-
     public update(): void {
         if (!this.isActive) return;
 
-        // oscillate angle
         this.angle += this.direction * this.speed;
         
         if (this.angle >= 90) {
@@ -102,14 +200,7 @@ export class LaunchMechanism {
             this.direction = 1;
         }
 
-        // thingy pos
-        const radians = Phaser.Math.DegToRad(this.angle - 90);
-        const x = 400 + Math.cos(radians) * 120;
-        const y = 500 + Math.sin(radians) * 120;
-        
-        this.indicator.clear();
-        this.indicator.fillStyle(0xffff00, 1);
-        this.indicator.fillCircle(x, y, 8);
+        this.updateNeedle();
     }
 
     public destroy(): void {
