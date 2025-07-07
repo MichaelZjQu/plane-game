@@ -112,13 +112,17 @@ export class Glider {
             //fuel
             this.currentFuel = Math.max(0, this.currentFuel - this.fuelConsumptionRate * dt);
 
-            const newAngle = velAngle - this.THRUST_ROTATION_FORCE * dt;
-            vx = Math.cos(newAngle) * speed;
-            vy = Math.sin(newAngle) * speed;
-            this.angle = newAngle;
-        
-
-            this.angle -= this.THRUST_ROTATION_FORCE * dt;
+            const currentAngleDegrees = Phaser.Math.RadToDeg(this.angle);
+            const maxUpwardAngle = -20;
+            
+            if (currentAngleDegrees > maxUpwardAngle) {
+                const newAngle = velAngle - this.THRUST_ROTATION_FORCE * dt;
+                vx = Math.cos(newAngle) * speed;
+                vy = Math.sin(newAngle) * speed;
+                this.angle = newAngle;
+                
+                this.angle -= this.THRUST_ROTATION_FORCE * dt;
+            }
         }
 
         this.sprite.rotation = this.angle;

@@ -32,14 +32,14 @@ export class Upgrade extends Scene {
         this.moneyText = this.add.text(400, 120, `Money: $${this.playerMoney}`, {fontSize: '18px',color: '#2980b9',fontStyle: 'bold'}).setOrigin(0.5);
 
         const upgradeConfigs = [
-            { key: 'reducedDrag', name: 'Sparrowdynamics', cost: 50, description: 'Reduces air resistance' },
-            { key: 'berryScore', name: 'Berry Score+', cost: 75, description: 'More money per berry' },
-            { key: 'berryMagnet', name: 'Berry Magnet', cost: 100, description: 'Attracts nearby berries' },
-            { key: 'reducedWeight', name: 'Reduced Weight', cost: 80, description: 'Lighter plane flies better' },
-            { key: 'launchPower', name: 'Launch Power+', cost: 120, description: 'Stronger launch force' },
-            { key: 'easierLaunch', name: 'Easier Launch', cost: 90, description: 'Slower Launch Meter' },
-            { key: 'moreFuel', name: 'More Fuel', cost: 110, description: 'Increased fuel capacity' },
-            { key: 'berryBoost', name: 'Berry Boost', cost: 130, description: 'Berries give speed boost' }
+            { key: 'reducedDrag', name: 'Sparrowdynamics', costs: [50, 70, 90, 120, 150], description: 'Reduces air resistance' },
+            { key: 'berryScore', name: 'Berry Score+', costs: [75, 100, 130, 165, 200], description: 'More money per berry' },
+            { key: 'berryMagnet', name: 'Berry Magnet', costs: [100, 140, 180, 230, 280], description: 'Attracts nearby berries' },
+            { key: 'reducedWeight', name: 'Reduced Weight', costs: [80, 110, 145, 185, 230], description: 'Lighter plane flies better' },
+            { key: 'launchPower', name: 'Launch Power+', costs: [120, 160, 210, 270, 340], description: 'Stronger launch force' },
+            { key: 'easierLaunch', name: 'Easier Launch', costs: [90, 125, 165, 210, 260], description: 'Slower Launch Meter' },
+            { key: 'moreFuel', name: 'More Fuel', costs: [110, 150, 195, 250, 310], description: 'Increased fuel capacity' },
+            { key: 'berryBoost', name: 'Berry Boost', costs: [130, 175, 230, 295, 370], description: 'Berries give speed boost' }
         ];
 
         let hoverText: Phaser.GameObjects.Text | null = null;
@@ -53,14 +53,16 @@ export class Upgrade extends Scene {
             const y = 200 + (row * 125);
             
             const currentLevel = this.upgrades[upgrade.key as keyof typeof this.upgrades];
-            const canAfford = this.playerMoney >= upgrade.cost;
+            const currentCost = upgrade.costs[currentLevel] || 999999;
+            const canAfford = this.playerMoney >= currentCost && currentLevel < upgrade.costs.length;
+            const isMaxLevel = currentLevel >= upgrade.costs.length;
             
             let color: number;
             if (currentLevel === 0) color = 0xff0000;
             else if (currentLevel === 1) color = 0xffff00;
             else color = 0x00ff00;
             
-            const alpha = canAfford ? 1 : 0.3;
+            const alpha = (canAfford || isMaxLevel) ? 1 : 0.3;
             
             const square = this.add.rectangle(x, y, 100, 100, color, alpha).setStrokeStyle(3, 0x000000).setInteractive({ useHandCursor: true });
 
@@ -76,7 +78,7 @@ export class Upgrade extends Scene {
                 
                 const descText = this.add.text(x, y - 40, upgrade.description, {fontSize: '12px',color: '#ffffff'}).setOrigin(0.5);
                 
-                const costText = this.add.text(x, y - 20, `Cost: $${upgrade.cost}`, {fontSize: '14px',color: canAfford ? '#00ff00' : '#ff0000',fontStyle: 'bold'}).setOrigin(0.5);
+                const costText = this.add.text(x, y - 20, isMaxLevel ? 'MAX LEVEL' : `Cost: $${currentCost}`, {fontSize: '14px',color: isMaxLevel ? '#ffff00' : (canAfford ? '#00ff00' : '#ff0000'),fontStyle: 'bold'}).setOrigin(0.5);
                 
                 hoverText.setData('extraTexts', [descText, costText]);
             });
@@ -96,8 +98,8 @@ export class Upgrade extends Scene {
             });
 
             square.on('pointerdown', () => {
-                if (canAfford) {
-                    this.purchaseUpgrade(upgrade.key as keyof typeof this.upgrades, upgrade.cost);
+                if (canAfford && !isMaxLevel) {
+                    this.purchaseUpgrade(upgrade.key as keyof typeof this.upgrades, currentCost);
                 }
             });
         });
@@ -109,13 +111,6 @@ export class Upgrade extends Scene {
         this.add.text(400, 550, 'FLY AGAIN', {fontSize: '16px',color: '#2980b9',fontStyle: 'bold'}).setOrigin(0.5);
 
         backButton.on('pointerdown', () => {this.saveGameData();this.scene.start('Game', { upgrades: this.upgrades });});
-
-        const data = this.scene.settings.data as any;
-        if (data?.money) {
-            this.playerMoney += data.money; 
-            this.moneyText.setText(`Money: $${this.playerMoney}`);
-            this.saveGameData(); 
-        }
     }
 
     private loadGameData(): void {

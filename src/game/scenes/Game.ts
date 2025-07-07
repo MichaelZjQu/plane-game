@@ -148,17 +148,9 @@ export class Game extends Scene
     }
 
     private applyUpgrades(): void {
-        if (this.upgrades.reducedDrag > 0) {
-            this.plane.reduceDrag(this.upgrades.reducedDrag * 100000);
-        }
-
-        if (this.upgrades.reducedWeight > 0) {
-            this.plane.setWeightMultiplier(1 - (this.upgrades.reducedWeight * 0.1));
-        }
-
-        if (this.upgrades.moreFuel > 0) {
-            this.plane.setFuelMultiplier(1 + (this.upgrades.moreFuel * 0.2));
-        }
+        this.plane.reduceDrag(this.upgrades.reducedDrag * 100000);
+        this.plane.setWeightMultiplier(1 - (this.upgrades.reducedWeight * 0.1));
+        this.plane.setFuelMultiplier(1 + (this.upgrades.moreFuel * 0.2));
     }
 
     private loadUpgrades(): void {
