@@ -9,10 +9,15 @@ export class LaunchMechanism {
     private speed: number = 2;
     private isActive: boolean = true;
     private onLaunch: (power: number, angle: number) => void;
+    private launchPowerMultiplier: number = 1; 
+    private easierLaunchMultiplier: number = 1; 
     
-    constructor(scene: Scene, onLaunch: (power: number, angle: number) => void) {
+    constructor(scene: Scene, onLaunch: (power: number, angle: number) => void, launchPowerLevel: number = 0, easierLaunchLevel: number = 0) {
         this.scene = scene;
         this.onLaunch = onLaunch;
+        this.launchPowerMultiplier = 1 + (launchPowerLevel*0.5); 
+        this.easierLaunchMultiplier = Math.max(0.2, 1 - (easierLaunchLevel * 0.15)); 
+        this.speed = 2 * this.easierLaunchMultiplier; 
         this.create();
     }
 
@@ -151,26 +156,29 @@ export class LaunchMechanism {
 
         this.isActive = false;
 
-        let power: number;
+        let basePower: number;
         let launchAngle: number;
         let text: string;
 
         if (this.angle >= -10 && this.angle <= 10) {
             // good
-            power = 600;
+            basePower = 600;
             launchAngle = -45;
             text = "Good Launch";
         } else if ((this.angle >= -35 && this.angle < -10) || (this.angle > 10 && this.angle <= 35)) {
             // ok
-            power = 500;
+            basePower = 500;
             launchAngle = -40;
             text = "Okay Launch";
         } else {
             // bad
-            power = 400;
+            basePower = 400;
             launchAngle = -30;
             text = "Bad Launch";
         }
+
+        // Apply launch power multiplier
+        const finalPower = basePower * this.launchPowerMultiplier;
 
         this.flashNeedle(0x000000);
 
@@ -182,7 +190,7 @@ export class LaunchMechanism {
 
         this.scene.time.delayedCall(200, () => {
             launchText.destroy();
-            this.onLaunch(power, launchAngle);
+            this.onLaunch(finalPower, launchAngle);
             this.destroy();
         });
     }

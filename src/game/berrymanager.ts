@@ -1,14 +1,17 @@
 import { Scene } from 'phaser';
 import { ScoreModifier } from './scoremodifier';
+import { Glider } from './glider';
 
 export class BerryManager {
     private scene: Scene;
     private berries: Phaser.GameObjects.Group;
     private generatedScreens: Set<string> = new Set();
+    private plane: Glider;
 
-    constructor(scene: Scene, berries: Phaser.GameObjects.Group) {
+    constructor(scene: Scene, berries: Phaser.GameObjects.Group, plane: Glider) {
         this.scene = scene;
         this.berries = berries;
+        this.plane = plane;
     }
 
     public update(planeX: number, planeY: number, cameraX: number, cameraY: number): void {
@@ -26,6 +29,28 @@ export class BerryManager {
         }
 
         this.cleanupOldBerries(currentScreenX, currentScreenY);
+
+        //magnet the berries
+        const magnetRange = this.plane.getMagnetRange();
+        if (magnetRange > 0) {
+            this.berries.children.entries.forEach((child) => {
+                const container = child as Phaser.GameObjects.Container;
+                const modifier = container.getData('modifier');
+                
+                //only the good berries
+                if (modifier && modifier.value > 0) {
+                    const distance = Phaser.Math.Distance.Between(planeX, planeY, container.x, container.y);
+                    
+                    if (distance < magnetRange && distance > 20) {
+                        const attraction = Math.min(300, 8000 / distance);
+                        const angle = Phaser.Math.Angle.Between(container.x, container.y, planeX, planeY);
+                        
+                        container.x += Math.cos(angle) * attraction * (1/60);
+                        container.y += Math.sin(angle) * attraction * (1/60);
+                    }
+                }
+            });
+        }
     }
 
     private generateBerriesForScreen(screenX: number, screenY: number): void {
@@ -43,7 +68,7 @@ export class BerryManager {
 
         this.generatedScreens.add(key);
 
-        const berryCount = Phaser.Math.Between(8, 15);
+        const berryCount = Phaser.Math.Between(4, 8);
         const groundLevel = 500;
 
         for (let i = 0; i < berryCount; i++) {
@@ -72,8 +97,8 @@ export class BerryManager {
 
     private createPositiveBerry(x: number, y: number, altitude: number): ScoreModifier {
         const baseValue = 5;
-        const altitudeBonus = Math.floor(altitude / 100) * 2; 
-        const value = Math.min(baseValue + altitudeBonus, 25); 
+        const altitudeBonus = Math.floor(altitude / 1000) * 2; 
+        const value = Math.min(baseValue + altitudeBonus, 20); 
         
         return new ScoreModifier(this.scene, x, y, value, '+', 0x00ff00);
     }

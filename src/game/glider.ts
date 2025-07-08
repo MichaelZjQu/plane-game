@@ -17,12 +17,17 @@ export class Glider {
 
     
     private readonly MAX_DRAG = 0.97;
-    private readonly BASE_DRAG = 0.995;
+    private readonly BASE_DRAG = 0.997;
     private readonly ROTATION_SMOOTHING = 6.0;
     private readonly THRUST_ROTATION_FORCE = 2.0;
 
     private weightMultiplier = 1;
     private fuelMultiplier = 1;
+
+    private magnetRange = 0;
+
+    private bBoostMulti = 0;
+    private boostCooldownEnd = 0;
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
         this.sprite = scene.physics.add.sprite(x, y, texture).setScale(0.15);
@@ -50,26 +55,8 @@ export class Glider {
         this.sprite.rotation = this.angle;
     }
 
-    handleInput(thrustPressed: boolean) {
+    public handleInput(thrustPressed: boolean) {
         this.isThrusting = thrustPressed && this.currentFuel > 0 && this.isLaunched;
-    }
-
-    boost(angle : number, velocity: number) {
-        const vx = this.body.velocity.x;
-        const vy = this.body.velocity.y;
-        const speed = Math.hypot(vx, vy);
-
-        const velAngle = Math.atan2(vy, vx);
-
-        const newAngle = velAngle - angle;
-        const newSpeed = speed + velocity;
-
-        const newVx = Math.cos(newAngle) * newSpeed;
-        const newVy = Math.sin(newAngle) * newSpeed;
-        
-        this.body.setVelocity(newVx, newVy);
-        this.angle = newAngle;
-
     }
 
     public reduceDrag(amount: number): void {
@@ -86,16 +73,46 @@ export class Glider {
         this.currentFuel = this.maxFuel;
     }
 
+    public setThrustMultiplier(multiplier: number): void {
+        this.thrustForce = 200 * multiplier;
+    }
+
+    public setMagnetRange(range: number): void {
+        this.magnetRange = range;
+    }
+
+    public setBBoostMulti(multiplier: number): void {
+        this.bBoostMulti = multiplier;
+    }
+
+    public berryBoost(): void {
+        if (this.bBoostMulti > 0) {
+            const currentTime = Date.now();
+            
+            if (currentTime >= this.boostCooldownEnd) {
+                const boostMultiplier = 1 + (this.bBoostMulti * 0.2); 
+                
+                const currentVx = this.body.velocity.x;
+                const currentVy = this.body.velocity.y;
+                
+                this.body.setVelocity(
+                    currentVx * boostMultiplier,
+                    currentVy
+                );
+                
+                //3 sec cd
+                this.boostCooldownEnd = currentTime + 3000;
+            }
+        }
+    }
+
     update(dt: number) {
         let vx = this.body.velocity.x;
         let vy = this.body.velocity.y;
-        const speed = Math.hypot(vx, vy);
+        const totalSpeed = Math.hypot(vx, vy);
 
-
-        //upgrade calcs
-
-        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - speed/this.dragDenominator);
-
+        // Calculate base physics
+        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - totalSpeed/this.dragDenominator);
         const gravity = 300 * this.weightMultiplier;
 
 
@@ -103,7 +120,7 @@ export class Glider {
         const optimalAngle = -Math.PI / 6;
         const angleDiff = Math.abs(this.angle - optimalAngle);
         const liftFactor = Math.max(0, 1-(angleDiff/(Math.PI/2)));
-        const lift = -0.5 * speed * liftFactor/2;
+        const lift = -0.5 * totalSpeed * liftFactor/2;
 
         //rotation
         const velAngle = Math.atan2(vy, vx);
@@ -117,8 +134,8 @@ export class Glider {
             
             if (currentAngleDegrees > maxUpwardAngle) {
                 const newAngle = velAngle - this.THRUST_ROTATION_FORCE * dt;
-                vx = Math.cos(newAngle) * speed;
-                vy = Math.sin(newAngle) * speed;
+                vx = Math.cos(newAngle) * totalSpeed;
+                vy = Math.sin(newAngle) * totalSpeed;
                 this.angle = newAngle;
                 
                 this.angle -= this.THRUST_ROTATION_FORCE * dt;
@@ -155,12 +172,16 @@ export class Glider {
         this.body.setVelocity(newVx, newVy);
     }
 
-    getCurrentFuel(): number {
+    public getCurrentFuel(): number {
         return this.currentFuel;
     }
 
-    getMaxFuel(): number {
+   public  getMaxFuel(): number {
         return this.maxFuel;
+    }
+
+    public getMagnetRange(): number {
+        return this.magnetRange;
     }
 
     public launched(): boolean {

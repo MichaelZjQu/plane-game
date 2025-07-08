@@ -35,6 +35,10 @@ export class ScoreModifier {
         body.setAllowGravity(false);
     }
 
+    public getValue(): number {
+        return this.value;
+    }
+
     calculateScore(currentScore: number): number{
         switch (this.operation) {
             case '+':

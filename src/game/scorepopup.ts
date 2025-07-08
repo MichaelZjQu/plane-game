@@ -9,10 +9,10 @@ export class ScorePopup {
         this.scene = scene;
     }
 
-    public show(score: number, distance: number, maxAltitude: number, onUpgrade: () => void): void {
+    public show(score: number, distance: number, maxAltitude: number, currentDay: number, berriesCollected: number, onUpgrade: () => void): void {
         
         //calcs
-        const scoreBonus = score; // 10 per default berry
+        const scoreBonus = score; // 5 per default berry
         const distanceBonus = Math.floor(distance / 100) * 2; // 2 per 10m
         const altitudeBonus = Math.floor(maxAltitude / 100) * 5; // 5 per 10m
         const totalMoney = scoreBonus + distanceBonus + altitudeBonus;
@@ -24,14 +24,14 @@ export class ScorePopup {
 
         const headerBg = this.scene.add.graphics().fillStyle(0x3498db).fillRoundedRect(-240, -210, 480, 60, 15); 
 
-        const title = this.scene.add.text(0, -180, 'FLIGHT COMPLETE!', { fontSize: '24px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5); 
+        const title = this.scene.add.text(0, -180, `DAY ${currentDay} COMPLETE!`, { fontSize: '24px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5); 
 
         // stats
         const statsStartY = -110; 
         const stats = [
             { text: `Distance: ${Math.floor(distance / 10)}m`, color: '#e67e22' },
             { text: `Max Altitude: ${Math.floor(maxAltitude / 10)}m`, color: '#9b59b6' },
-            { text: `Berry Score: ${score}`, color: '#27ae60' }
+            { text: `Berries Collected: ${berriesCollected}`, color: '#27ae60' }
         ];
 
         // stat graphics

@@ -19,6 +19,7 @@ export class Game extends Scene
     private startX: number = 100;
     private startY: number = 572;
     private score: number = 0;
+    private berriesCollected: number = 0; 
     private scoreSquares!: Phaser.GameObjects.Group;
 
     //run end stuff
@@ -33,10 +34,13 @@ export class Game extends Scene
         berryMagnet: 0,
         reducedWeight: 0,
         launchPower: 0,
+        thrustPower: 0,
         easierLaunch: 0,
         moreFuel: 0,
         berryBoost: 0
     };
+
+    private currentDay = 1; 
 
     constructor ()
     {
@@ -47,6 +51,7 @@ export class Game extends Scene
     {   
         //reset every run
         this.resetGameVariables();
+        
 
         this.gameInput = new GameInput(this);
         this.ui = new GameUI(this);
@@ -58,7 +63,15 @@ export class Game extends Scene
 
         //score calc
         this.scoreSquares = this.add.group();
-        this.berryManager = new BerryManager(this, this.scoreSquares);
+
+        //plane
+        this.plane = new Glider(this, 0, 560, 'plane');
+
+        this.berryManager = new BerryManager(this, this.scoreSquares, this.plane);
+
+        this.loadUpgrades();       
+        this.applyUpgrades();
+        
 
         //launch
         this.launchMechanism = new LaunchMechanism(this, (power, angle) => {
@@ -66,10 +79,7 @@ export class Game extends Scene
             this.lastPosition = { x: this.plane.sprite.x, y: this.plane.sprite.y };
             this.timeSinceMovement = 0;
             this.gameEnded = false;
-        });
-
-        //plane stuff
-        this.plane = new Glider(this, 0, 560, 'plane');
+        }, this.upgrades.launchPower, this.upgrades.easierLaunch); 
 
         this.cameras.main.startFollow(this.plane.sprite);
         this.cameras.main.setScroll(0, 0);
@@ -77,19 +87,28 @@ export class Game extends Scene
         this.physics.add.overlap(this.plane.sprite, this.scoreSquares, (_plane, scoreSquare) => {
             const container = scoreSquare as Phaser.GameObjects.Container;
             const modifier: ScoreModifier = container.getData('modifier');
-            this.score = modifier.calculateScore(this.score);
+            
+            //scoreupgrade
+            const berryMultiplier = 1 + (this.upgrades.berryScore * 0.5);
+            const baseScore = modifier.calculateScore(this.score);
+            const bonusScore = Math.floor((baseScore - this.score) * berryMultiplier);
+            this.score = this.score + bonusScore;
+            
+            //berry boost
+            if (modifier.getValue() > 0) {
+                this.plane.berryBoost();
+                this.berriesCollected++;
+            }
+            
             modifier.destroy();
 
-            //maybe no boost for berries
-            // this.plane.boost(0.4, 200);
         });
-
-        this.loadUpgrades();       
-        this.applyUpgrades();
+ 
     }
 
     private resetGameVariables(): void {
         this.score = 0;
+        this.berriesCollected = 0; 
         this.maxAltitude = 0;
         this.timeSinceMovement = 0;
         this.gameEnded = false;
@@ -149,17 +168,24 @@ export class Game extends Scene
 
     private applyUpgrades(): void {
         this.plane.reduceDrag(this.upgrades.reducedDrag * 100000);
-        this.plane.setWeightMultiplier(1 - (this.upgrades.reducedWeight * 0.1));
+        this.plane.setWeightMultiplier(1 - (this.upgrades.reducedWeight * 0.03));
         this.plane.setFuelMultiplier(1 + (this.upgrades.moreFuel * 0.2));
+        this.plane.setThrustMultiplier(1 + (this.upgrades.thrustPower * 0.3));
+        this.plane.setMagnetRange(this.upgrades.berryMagnet * 40);
+        this.plane.setBBoostMulti(this.upgrades.berryBoost);
     }
 
     private loadUpgrades(): void {
         try {
-            const savedData = localStorage.getItem('planeGameData');
+            const savedData = localStorage.getItem('gameData1');
             if (savedData) {
                 const data = JSON.parse(savedData);
                 if (data.upgrades) {
                     this.upgrades = { ...this.upgrades, ...data.upgrades };
+                }
+                // Load current day
+                if (data.currentDay) {
+                    this.currentDay = data.currentDay;
                 }
             }
         } catch (error) {
@@ -171,6 +197,9 @@ export class Game extends Scene
         if (sceneData?.upgrades) {
             this.upgrades = { ...this.upgrades, ...sceneData.upgrades };
         }
+        if (sceneData?.currentDay) {
+            this.currentDay = sceneData.currentDay;
+        }
     }
 
     private endGame(distance: number, maxAltitude: number) {
@@ -178,12 +207,13 @@ export class Game extends Scene
         
         // calc upgrades
         const baseScoreBonus = this.score * (1 + (this.upgrades.berryScore * 0.5));
-        const distanceBonus = Math.floor(distance / 100) * 2;
-        const altitudeBonus = Math.floor(maxAltitude / 100) * 5;
+        const distanceBonus = Math.floor(distance / 100) * 1.5;
+        const altitudeBonus = Math.floor(maxAltitude / 100) * 3;
         const totalMoney = Math.floor(baseScoreBonus + distanceBonus + altitudeBonus);
         
-        this.scorePopup.show(this.score, distance, maxAltitude, () => {
-            this.scene.start('Upgrade', { money: totalMoney, upgrades: this.upgrades });
+        this.scorePopup.show(this.score, distance, maxAltitude, this.currentDay, this.berriesCollected, () => {
+            this.currentDay++;
+            this.scene.start('Upgrade', { money: totalMoney, upgrades: this.upgrades, currentDay: this.currentDay });
         });
     }
 }
