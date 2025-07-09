@@ -18,6 +18,11 @@ export class LaunchMechanism {
         this.launchPowerMultiplier = 1 + (launchPowerLevel*0.5); 
         this.easierLaunchMultiplier = Math.max(0.2, 1 - (easierLaunchLevel * 0.15)); 
         this.speed = 2 * this.easierLaunchMultiplier; 
+        
+        // start at random pos
+        this.angle = Phaser.Math.Between(-90, 90);
+        this.direction = Phaser.Math.Between(0, 1) === 0 ? -1 : 1; 
+        
         this.create();
     }
 
@@ -177,16 +182,11 @@ export class LaunchMechanism {
             text = "Bad Launch";
         }
 
-        // Apply launch power multiplier
         const finalPower = basePower * this.launchPowerMultiplier;
 
         this.flashNeedle(0x000000);
 
-        const launchText = this.scene.add.text(400, 300, text, {
-            fontSize: '48px',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+        const launchText = this.scene.add.text(400, 300, text, {fontSize: '48px',color: '#ffffff',fontStyle: 'bold'}).setOrigin(0.5).setScrollFactor(0).setDepth(200);
 
         this.scene.time.delayedCall(200, () => {
             launchText.destroy();

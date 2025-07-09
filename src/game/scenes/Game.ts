@@ -6,6 +6,7 @@ import { GameUI } from '../gameui';
 import { LaunchMechanism } from '../launchmechanism';
 import { BerryManager } from '../berrymanager';
 import { ScorePopup } from '../scorepopup';
+import { TutorialPopup } from '../tutorialpopup';
 
 export class Game extends Scene
 {   
@@ -56,7 +57,10 @@ export class Game extends Scene
         this.gameInput = new GameInput(this);
         this.ui = new GameUI(this);
         this.scorePopup = new ScorePopup(this);
-
+        const tutorialPopup = new TutorialPopup(this);
+        
+        
+        
         //world stuff
         this.physics.world.setBounds(0, 0, 3000, 600);
         this.physics.world.gravity.set(0,0);
@@ -71,6 +75,10 @@ export class Game extends Scene
 
         this.loadUpgrades();       
         this.applyUpgrades();
+
+        if(this.currentDay === 1) {
+            tutorialPopup.showFirstTutorial(() => {/* todo: freeze launch */});
+        }
         
 
         //launch
@@ -237,7 +245,7 @@ export class Game extends Scene
         
         this.scorePopup.show(this.score, distance, maxAltitude, this.currentDay, this.berriesCollected, () => {
             this.currentDay++;
-            this.scene.start('Upgrade', { money: totalMoney, upgrades: this.upgrades, currentDay: this.currentDay });
+            this.scene.start('Upgrade', { money: totalMoney, upgrades: this.upgrades, currentDay: this.currentDay});
         });
     }
 }

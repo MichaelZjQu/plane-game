@@ -3,7 +3,7 @@ import { Scene } from 'phaser';
 export class Upgrade extends Scene {
     private playerMoney: number = 0;
     private moneyText: Phaser.GameObjects.Text;
-    private currentDay: number = 1; // Add day tracking
+    private currentDay: number = 1; 
     
     private upgrades = {
         reducedDrag: 0,
@@ -24,8 +24,15 @@ export class Upgrade extends Scene {
     create() {
         this.loadGameData();
 
+        
+
         //load moneys earned
         const data = this.scene.settings.data as any;
+
+        if (data.currentDay) {
+            this.currentDay = data.currentDay;
+        }
+
         if (data.money) {
             this.playerMoney += data.money; 
             this.saveGameData(); 
@@ -34,9 +41,7 @@ export class Upgrade extends Scene {
             this.scene.settings.data = {...data, money: 0};
         }
         
-        if (data.currentDay) {
-            this.currentDay = data.currentDay;
-        }
+        
 
         this.add.image(400, 300, 'upgrade_menu').setDisplaySize(800, 600);
         this.add.graphics().fillStyle(0x3498db, 0.9).fillRoundedRect(50, 10, 700, 580, 20).lineStyle(4, 0x2980b9).strokeRoundedRect(50, 10, 700, 580, 20);
@@ -145,7 +150,7 @@ export class Upgrade extends Scene {
                 const data = JSON.parse(savedData);
                 this.playerMoney = data.money || 0;
                 this.upgrades = { ...this.upgrades, ...data.upgrades };
-                this.currentDay = data.currentDay || 1; // Load day
+                this.currentDay = data.currentDay || 1; 
             }
         } catch (error) {
             console.warn('Could not load game data:', error);
@@ -154,7 +159,7 @@ export class Upgrade extends Scene {
 
     private saveGameData(): void {
         try {
-            const dataToSave = {money: this.playerMoney, upgrades: this.upgrades, currentDay: this.currentDay}; // Save day
+            const dataToSave = {money: this.playerMoney, upgrades: this.upgrades, currentDay: this.currentDay}; 
             localStorage.setItem('gameData1', JSON.stringify(dataToSave));
         } catch (error) {
             console.warn('Could not save game data:', error);
