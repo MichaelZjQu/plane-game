@@ -146,7 +146,7 @@ class Glider {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: 0.995
+            value: 0.997
         });
         Object.defineProperty(this, "ROTATION_SMOOTHING", {
             enumerable: true,
@@ -160,12 +160,6 @@ class Glider {
             writable: true,
             value: 2.0
         });
-        Object.defineProperty(this, "dragMultiplier", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 1
-        });
         Object.defineProperty(this, "weightMultiplier", {
             enumerable: true,
             configurable: true,
@@ -177,6 +171,24 @@ class Glider {
             configurable: true,
             writable: true,
             value: 1
+        });
+        Object.defineProperty(this, "magnetRange", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "bBoostMulti", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "boostCooldownEnd", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
         });
         this.sprite = scene.physics.add.sprite(x, y, texture).setScale(0.15);
         this.body = this.sprite.body;
@@ -197,52 +209,66 @@ class Glider {
     handleInput(thrustPressed) {
         this.isThrusting = thrustPressed && this.currentFuel > 0 && this.isLaunched;
     }
-    boost(angle, velocity) {
-        const vx = this.body.velocity.x;
-        const vy = this.body.velocity.y;
-        const speed = Math.hypot(vx, vy);
-        const velAngle = Math.atan2(vy, vx);
-        const newAngle = velAngle - angle;
-        const newSpeed = speed + velocity;
-        const newVx = Math.cos(newAngle) * newSpeed;
-        const newVy = Math.sin(newAngle) * newSpeed;
-        this.body.setVelocity(newVx, newVy);
-        this.angle = newAngle;
-    }
-    setDragMultiplier(multiplier) {
-        this.dragMultiplier = multiplier;
+    reduceDrag(amount) {
+        this.dragDenominator += amount;
     }
     setWeightMultiplier(multiplier) {
         this.weightMultiplier = multiplier;
     }
     setFuelMultiplier(multiplier) {
         this.fuelMultiplier = multiplier;
-        this.maxFuel = 100 * multiplier;
+        this.maxFuel = 100 * this.fuelMultiplier;
         this.currentFuel = this.maxFuel;
+    }
+    setThrustMultiplier(multiplier) {
+        this.thrustForce = 200 * multiplier;
+    }
+    setMagnetRange(range) {
+        this.magnetRange = range;
+    }
+    setBBoostMulti(multiplier) {
+        this.bBoostMulti = multiplier;
+    }
+    berryBoost() {
+        if (this.bBoostMulti > 0) {
+            const currentTime = Date.now();
+            if (currentTime >= this.boostCooldownEnd) {
+                const boostMultiplier = 1 + (this.bBoostMulti * 0.2);
+                const currentVx = this.body.velocity.x;
+                const currentVy = this.body.velocity.y;
+                this.body.setVelocity(currentVx * boostMultiplier, currentVy);
+                //3 sec cd
+                this.boostCooldownEnd = currentTime + 3000;
+            }
+        }
     }
     update(dt) {
         let vx = this.body.velocity.x;
         let vy = this.body.velocity.y;
-        const speed = Math.hypot(vx, vy);
-        //upgrade cacs
-        const drag = Math.max(this.MAX_DRAG, (this.BASE_DRAG - speed / this.dragDenominator) * this.dragMultiplier);
+        const totalSpeed = Math.hypot(vx, vy);
+        // Calculate base physics
+        const drag = Math.max(this.MAX_DRAG, this.BASE_DRAG - totalSpeed / this.dragDenominator);
         const gravity = 300 * this.weightMultiplier;
         //lift
         const optimalAngle = -Math.PI / 6;
         const angleDiff = Math.abs(this.angle - optimalAngle);
         const liftFactor = Math.max(0, 1 - (angleDiff / (Math.PI / 2)));
-        const lift = -0.5 * speed * liftFactor / 2;
+        const lift = -0.5 * totalSpeed * liftFactor / 2;
         //rotation
         const velAngle = Math.atan2(vy, vx);
         this.angle += (velAngle - this.angle) * this.ROTATION_SMOOTHING * dt;
         if (this.isThrusting) {
             //fuel
             this.currentFuel = Math.max(0, this.currentFuel - this.fuelConsumptionRate * dt);
-            const newAngle = velAngle - this.THRUST_ROTATION_FORCE * dt;
-            vx = Math.cos(newAngle) * speed;
-            vy = Math.sin(newAngle) * speed;
-            this.angle = newAngle;
-            this.angle -= this.THRUST_ROTATION_FORCE * dt;
+            const currentAngleDegrees = Phaser$1.Math.RadToDeg(this.angle);
+            const maxUpwardAngle = -20;
+            if (currentAngleDegrees > maxUpwardAngle) {
+                const newAngle = velAngle - this.THRUST_ROTATION_FORCE * dt;
+                vx = Math.cos(newAngle) * totalSpeed;
+                vy = Math.sin(newAngle) * totalSpeed;
+                this.angle = newAngle;
+                this.angle -= this.THRUST_ROTATION_FORCE * dt;
+            }
         }
         this.sprite.rotation = this.angle;
         //thrust!
@@ -272,6 +298,9 @@ class Glider {
     }
     getMaxFuel() {
         return this.maxFuel;
+    }
+    getMagnetRange() {
+        return this.magnetRange;
     }
     launched() {
         return this.isLaunched;
@@ -339,6 +368,30 @@ class GameUI {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "progressLine", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "progressArrow", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "progressText", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "progressBarVisible", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         Object.defineProperty(this, "cityLayer1", {
             enumerable: true,
             configurable: true,
@@ -398,18 +451,34 @@ class GameUI {
         this.cityLayer3 = this.scene.add.tileSprite(0, 0, 800, 600, 'city_3').setOrigin(0, 0).setScrollFactor(0).setDepth(-1);
         //floor
         this.road = this.scene.add.tileSprite(0, 522, 800, 78, 'road').setOrigin(0, 0).setScrollFactor(0);
-        this.scene.add.image(140, 60, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.6).setDepth(1);
-        this.scene.add.image(400, 60, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.6).setDepth(1);
-        this.scene.add.image(660, 60, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.6).setDepth(1);
-        this.distanceContainer = this.createTextSprites(150, 60, 'Distance\n0m', 0.5, 0.5, 0.1).setDepth(1);
-        this.velocityContainer = this.createTextSprites(410, 60, 'Velocity\n0', 0.5, 0.5, 0.1).setDepth(1);
-        this.altitudeContainer = this.createTextSprites(670, 60, 'Altitude\n0m', 0.5, 0.5, 0.1).setDepth(1);
+        this.scene.add.image(140, 80, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.4).setDepth(1);
+        this.scene.add.image(400, 80, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.4).setDepth(1);
+        this.scene.add.image(660, 80, 'feather_container').setOrigin(0.5, 0.5).setScrollFactor(0).setScale(0.4).setDepth(1);
+        this.distanceContainer = this.createTextSprites(150, 75, 'Distance\n0m', 0.5, 0.5, 0.1).setDepth(1);
+        this.velocityContainer = this.createTextSprites(410, 75, 'Velocity\n0', 0.5, 0.5, 0.1).setDepth(1);
+        this.altitudeContainer = this.createTextSprites(670, 75, 'Altitude\n0m', 0.5, 0.5, 0.1).setDepth(1);
         const roundedRect = this.scene.add.graphics().setScrollFactor(0).setDepth(2);
         roundedRect.fillStyle(0x000000, 0.7);
         roundedRect.fillRoundedRect(10, 510, 200, 80, 15);
         this.scene.add.rectangle(20, 520, 160, 16, 0x333333).setOrigin(0, 0).setScrollFactor(0).setDepth(3);
         this.fuelBarFill = this.scene.add.rectangle(22, 522, 156, 12, 0x00ff00).setOrigin(0, 0).setScrollFactor(0).setDepth(3);
         this.fuelText = this.scene.add.text(20, 545, 'Fuel: 100%', { fontSize: '16px', color: '#ffffff' }).setOrigin(0, 0).setScrollFactor(0).setDepth(3);
+        // progress bar line
+        this.progressLine = this.scene.add.graphics().setScrollFactor(0).setDepth(4).setVisible(false);
+        this.progressArrow = this.scene.add.graphics().setScrollFactor(0).setDepth(4).setVisible(false);
+        this.progressText = this.createTextSprites(400, 545, '10000m', 0.5, 0.5, 0.08).setDepth(4).setVisible(false);
+    }
+    showProgressBar() {
+        this.progressBarVisible = true;
+        this.progressLine.setVisible(true);
+        this.progressArrow.setVisible(true);
+        this.progressText.setVisible(true);
+    }
+    hideProgressBar() {
+        this.progressBarVisible = false;
+        this.progressLine.setVisible(false);
+        this.progressArrow.setVisible(false);
+        this.progressText.setVisible(false);
     }
     generateClouds(screenX, screenY) {
         const key = `${screenX},${screenY}`;
@@ -431,11 +500,7 @@ class GameUI {
             else {
                 y = screenY * 600 + Phaser.Math.Between(0, 600);
             }
-            const cloud = this.scene.add.image(x, y, 'cloud_1')
-                .setOrigin(0.5)
-                .setScale(Phaser.Math.FloatBetween(0.4, 1.0))
-                .setAlpha(Phaser.Math.FloatBetween(0.5, 0.7))
-                .setDepth(0);
+            const cloud = this.scene.add.image(x, y, 'cloud_1').setOrigin(0.5).setScale(Phaser.Math.FloatBetween(0.4, 1.0)).setAlpha(Phaser.Math.FloatBetween(0.5, 0.7)).setDepth(0);
             this.clouds.push(cloud);
         }
     }
@@ -485,6 +550,26 @@ class GameUI {
         }
         else {
             this.fuelBarFill.setFillStyle(0xff0000); // red
+        }
+        // update progress bar
+        if (this.progressBarVisible) {
+            const distanceMeters = Math.floor(dist / 10);
+            const progress = Math.min(distanceMeters / 10000, 1);
+            this.progressLine.clear();
+            this.progressLine.lineStyle(3, 0x000000);
+            this.progressLine.beginPath();
+            this.progressLine.moveTo(250, 540);
+            this.progressLine.lineTo(550, 540);
+            this.progressLine.strokePath();
+            const arrowX = 250 + (300 * progress);
+            this.progressArrow.clear();
+            this.progressArrow.fillStyle(0x000000);
+            this.progressArrow.beginPath();
+            this.progressArrow.moveTo(arrowX, 530);
+            this.progressArrow.lineTo(arrowX - 8, 520);
+            this.progressArrow.lineTo(arrowX + 8, 520);
+            this.progressArrow.closePath();
+            this.progressArrow.fillPath();
         }
         //scrolling bg
         const camera = this.scene.cameras.main;
@@ -615,7 +700,7 @@ class GameUI {
 }
 
 class LaunchMechanism {
-    constructor(scene, onLaunch) {
+    constructor(scene, onLaunch, launchPowerLevel = 0, easierLaunchLevel = 0) {
         Object.defineProperty(this, "scene", {
             enumerable: true,
             configurable: true,
@@ -664,74 +749,168 @@ class LaunchMechanism {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "launchPowerMultiplier", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
+        });
+        Object.defineProperty(this, "easierLaunchMultiplier", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
+        });
         this.scene = scene;
         this.onLaunch = onLaunch;
+        this.launchPowerMultiplier = 1 + (launchPowerLevel * 0.5);
+        this.easierLaunchMultiplier = Math.max(0.2, 1 - (easierLaunchLevel * 0.15));
+        this.speed = 2 * this.easierLaunchMultiplier;
+        // start at random pos
+        this.angle = Phaser.Math.Between(-90, 90);
+        this.direction = Phaser.Math.Between(0, 1) === 0 ? -1 : 1;
         this.create();
     }
     create() {
-        this.arc = this.scene.add.graphics().setScrollFactor(0);
-        this.arc.lineStyle(4, 0x00ff00, 1);
+        this.arc = this.scene.add.graphics().setScrollFactor(0).setDepth(100);
+        // red
+        this.arc.fillStyle(0xff0000, 0.8);
         this.arc.beginPath();
-        this.arc.arc(400, 500, 120, Math.PI, 0, false);
-        this.arc.strokePath();
-        this.arc.lineStyle(6, 0xff0000, 1);
+        this.arc.arc(400, 600, 120, Math.PI, 2 * Math.PI, false);
+        this.arc.fillPath();
+        // green
+        this.arc.fillStyle(0x00ff00, 0.9);
         this.arc.beginPath();
-        this.arc.moveTo(400, 500);
-        this.arc.lineTo(400, 380);
+        this.arc.arc(400, 600, 120, Math.PI * 1.45, Math.PI * 1.55, false);
+        this.arc.lineTo(400, 600);
+        this.arc.fillPath();
+        // yellow
+        this.arc.fillStyle(0xffff00, 0.9);
+        this.arc.beginPath();
+        this.arc.arc(400, 600, 120, Math.PI * 1.55, Math.PI * 1.7, false);
+        this.arc.lineTo(400, 600);
+        this.arc.fillPath();
+        this.arc.beginPath();
+        this.arc.arc(400, 600, 120, Math.PI * 1.3, Math.PI * 1.45, false);
+        this.arc.lineTo(400, 600);
+        this.arc.fillPath();
+        // outline
+        this.arc.lineStyle(4, 0x000000, 1);
+        this.arc.beginPath();
+        this.arc.arc(400, 600, 120, Math.PI, 2 * Math.PI, false);
         this.arc.strokePath();
-        this.indicator = this.scene.add.graphics().setScrollFactor(0);
-        this.indicator.fillStyle(0xffff00, 1);
-        this.indicator.fillCircle(400, 380, 8);
-        const clickArea = this.scene.add.rectangle(400, 450, 300, 200, 0x000000, 0)
-            .setInteractive()
-            .setScrollFactor(0);
+        this.arc.lineStyle(2, 0x000000, 1);
+        const angles = [1.3, 1.45, 1.55, 1.7];
+        angles.forEach(multiplier => {
+            const angle = Math.PI * multiplier;
+            const x = 400 + Math.cos(angle) * 120;
+            const y = 600 + Math.sin(angle) * 120;
+            this.arc.beginPath();
+            this.arc.moveTo(400, 600);
+            this.arc.lineTo(x, y);
+            this.arc.strokePath();
+        });
+        this.indicator = this.scene.add.graphics().setScrollFactor(0).setDepth(101);
+        this.updateNeedle();
+        const instructionText = this.scene.add.text(400, 300, 'Click anywhere to launch!', { fontSize: '32px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+        this.scene.tweens.add({ targets: instructionText, alpha: 0, duration: 500, yoyo: true, repeat: -1 });
+        const clickArea = this.scene.add.rectangle(400, 300, 800, 600, 0x000000, 0).setInteractive().setScrollFactor(0).setDepth(102);
         clickArea.on('pointerdown', () => {
+            instructionText.destroy();
             this.attemptLaunch();
         });
+    }
+    updateNeedle() {
+        this.indicator.clear();
+        const normalizedAngle = (this.angle + 90) / 180;
+        const radians = Math.PI + (normalizedAngle * Math.PI);
+        const x = 400 + Math.cos(radians) * 110;
+        const y = 600 + Math.sin(radians) * 110;
+        //needle
+        this.indicator.lineStyle(6, 0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(400, 600);
+        this.indicator.lineTo(x, y);
+        this.indicator.strokePath();
+        const triangleSize = 12;
+        const triangleX1 = x + Math.cos(radians) * triangleSize;
+        const triangleY1 = y + Math.sin(radians) * triangleSize;
+        const triangleX2 = x + Math.cos(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY2 = y + Math.sin(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleX3 = x + Math.cos(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY3 = y + Math.sin(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        this.indicator.fillStyle(0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(triangleX1, triangleY1);
+        this.indicator.lineTo(triangleX2, triangleY2);
+        this.indicator.lineTo(triangleX3, triangleY3);
+        this.indicator.closePath();
+        this.indicator.fillPath();
+    }
+    flashNeedle(color) {
+        // make needle indicate landing
+        this.indicator.clear();
+        const normalizedAngle = (this.angle + 90) / 180;
+        const radians = Math.PI + (normalizedAngle * Math.PI);
+        const x = 400 + Math.cos(radians) * 110;
+        const y = 600 + Math.sin(radians) * 110;
+        this.indicator.lineStyle(6, 0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(400, 600);
+        this.indicator.lineTo(x, y);
+        this.indicator.strokePath();
+        const triangleSize = 12;
+        const triangleX1 = x + Math.cos(radians) * triangleSize;
+        const triangleY1 = y + Math.sin(radians) * triangleSize;
+        const triangleX2 = x + Math.cos(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY2 = y + Math.sin(radians + Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleX3 = x + Math.cos(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        const triangleY3 = y + Math.sin(radians - Math.PI * 0.8) * triangleSize * 0.6;
+        this.indicator.fillStyle(0x000000, 1);
+        this.indicator.beginPath();
+        this.indicator.moveTo(triangleX1, triangleY1);
+        this.indicator.lineTo(triangleX2, triangleY2);
+        this.indicator.lineTo(triangleX3, triangleY3);
+        this.indicator.closePath();
+        this.indicator.fillPath();
     }
     attemptLaunch() {
         if (!this.isActive)
             return;
         this.isActive = false;
-        //launch accuracy
-        const accuracy = Math.abs(this.angle);
-        let power;
+        let basePower;
         let launchAngle;
-        if (accuracy <= 5) {
-            // perfect launch
-            power = 600;
+        let text;
+        if (this.angle >= -10 && this.angle <= 10) {
+            // good
+            basePower = 600;
             launchAngle = -45;
-            this.flashIndicator(0x00ff00); // Green
+            text = "Good Launch";
         }
-        else if (accuracy <= 15) {
-            // okay launch
-            power = 500;
+        else if ((this.angle >= -35 && this.angle < -10) || (this.angle > 10 && this.angle <= 35)) {
+            // ok
+            basePower = 500;
             launchAngle = -40;
-            this.flashIndicator(0xffff00); // Yellow
+            text = "Okay Launch";
         }
         else {
-            // bad launch
-            power = 400;
+            // bad
+            basePower = 400;
             launchAngle = -30;
-            this.flashIndicator(0xff0000); // Red
+            text = "Bad Launch";
         }
+        const finalPower = basePower * this.launchPowerMultiplier;
+        this.flashNeedle(0x000000);
+        const launchText = this.scene.add.text(400, 300, text, { fontSize: '48px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
         this.scene.time.delayedCall(200, () => {
-            this.onLaunch(power, launchAngle);
+            launchText.destroy();
+            this.onLaunch(finalPower, launchAngle);
             this.destroy();
         });
-    }
-    flashIndicator(color) {
-        this.indicator.clear();
-        this.indicator.fillStyle(color, 1);
-        const radians = Phaser.Math.DegToRad(this.angle - 90);
-        const x = 400 + Math.cos(radians) * 120;
-        const y = 500 + Math.sin(radians) * 120;
-        this.indicator.fillCircle(x, y, 12);
     }
     update() {
         if (!this.isActive)
             return;
-        // oscillate angle
         this.angle += this.direction * this.speed;
         if (this.angle >= 90) {
             this.angle = 90;
@@ -741,13 +920,7 @@ class LaunchMechanism {
             this.angle = -90;
             this.direction = 1;
         }
-        // thingy pos
-        const radians = Phaser.Math.DegToRad(this.angle - 90);
-        const x = 400 + Math.cos(radians) * 120;
-        const y = 500 + Math.sin(radians) * 120;
-        this.indicator.clear();
-        this.indicator.fillStyle(0xffff00, 1);
-        this.indicator.fillCircle(x, y, 8);
+        this.updateNeedle();
     }
     destroy() {
         if (this.arc) {
@@ -806,6 +979,9 @@ class ScoreModifier {
         body.setImmovable(true);
         body.setAllowGravity(false);
     }
+    getValue() {
+        return this.value;
+    }
     calculateScore(currentScore) {
         switch (this.operation) {
             case '+':
@@ -830,7 +1006,7 @@ class ScoreModifier {
 }
 
 class BerryManager {
-    constructor(scene, berries) {
+    constructor(scene, berries, plane) {
         Object.defineProperty(this, "scene", {
             enumerable: true,
             configurable: true,
@@ -849,8 +1025,15 @@ class BerryManager {
             writable: true,
             value: new Set()
         });
+        Object.defineProperty(this, "plane", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.scene = scene;
         this.berries = berries;
+        this.plane = plane;
     }
     update(planeX, planeY, cameraX, cameraY) {
         //same as clouds
@@ -864,6 +1047,24 @@ class BerryManager {
             }
         }
         this.cleanupOldBerries(currentScreenX, currentScreenY);
+        //magnet the berries
+        const magnetRange = this.plane.getMagnetRange();
+        if (magnetRange > 0) {
+            this.berries.children.entries.forEach((child) => {
+                const container = child;
+                const modifier = container.getData('modifier');
+                //only the good berries
+                if (modifier && modifier.value > 0) {
+                    const distance = Phaser.Math.Distance.Between(planeX, planeY, container.x, container.y);
+                    if (distance < magnetRange && distance > 20) {
+                        const attraction = Math.min(300, 8000 / distance);
+                        const angle = Phaser.Math.Angle.Between(container.x, container.y, planeX, planeY);
+                        container.x += Math.cos(angle) * attraction * (1 / 30);
+                        container.y += Math.sin(angle) * attraction * (1 / 30);
+                    }
+                }
+            });
+        }
     }
     generateBerriesForScreen(screenX, screenY) {
         const key = `${screenX},${screenY}`;
@@ -876,7 +1077,7 @@ class BerryManager {
             return;
         }
         this.generatedScreens.add(key);
-        const berryCount = Phaser.Math.Between(8, 15);
+        const berryCount = Phaser.Math.Between(4, 8);
         const groundLevel = 500;
         for (let i = 0; i < berryCount; i++) {
             const x = screenX * 800 + Phaser.Math.Between(0, 800);
@@ -900,8 +1101,8 @@ class BerryManager {
     }
     createPositiveBerry(x, y, altitude) {
         const baseValue = 5;
-        const altitudeBonus = Math.floor(altitude / 100) * 2;
-        const value = Math.min(baseValue + altitudeBonus, 25);
+        const altitudeBonus = Math.floor(altitude / 1000) * 2;
+        const value = Math.min(baseValue + altitudeBonus, 20);
         return new ScoreModifier(this.scene, x, y, value, '+', 0x00ff00);
     }
     cleanupOldBerries(currentScreenX, currentScreenY) {
@@ -952,9 +1153,9 @@ class ScorePopup {
         });
         this.scene = scene;
     }
-    show(score, distance, maxAltitude, onUpgrade) {
+    show(score, distance, maxAltitude, currentDay, berriesCollected, onUpgrade) {
         //calcs
-        const scoreBonus = score; // 10 per default berry
+        const scoreBonus = score; // 5 per default berry
         const distanceBonus = Math.floor(distance / 100) * 2; // 2 per 10m
         const altitudeBonus = Math.floor(maxAltitude / 100) * 5; // 5 per 10m
         const totalMoney = scoreBonus + distanceBonus + altitudeBonus;
@@ -962,13 +1163,13 @@ class ScorePopup {
         this.container = this.scene.add.container(400, 300).setScrollFactor(0).setDepth(2001); // Even higher
         const popupBg = this.scene.add.graphics().fillStyle(0xffffff).fillRoundedRect(-250, -220, 500, 440, 20).lineStyle(4, 0x000000).strokeRoundedRect(-250, -220, 500, 440, 20);
         const headerBg = this.scene.add.graphics().fillStyle(0x3498db).fillRoundedRect(-240, -210, 480, 60, 15);
-        const title = this.scene.add.text(0, -180, 'FLIGHT COMPLETE!', { fontSize: '24px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        const title = this.scene.add.text(0, -180, `DAY ${currentDay} COMPLETE!`, { fontSize: '24px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
         // stats
         const statsStartY = -110;
         const stats = [
             { text: `Distance: ${Math.floor(distance / 10)}m`, color: '#e67e22' },
             { text: `Max Altitude: ${Math.floor(maxAltitude / 10)}m`, color: '#9b59b6' },
-            { text: `Berry Bonus: ${score}`, color: '#27ae60' }
+            { text: `Berries Collected: ${berriesCollected}`, color: '#27ae60' }
         ];
         // stat graphics
         const statElements = [];
@@ -1031,6 +1232,66 @@ class ScorePopup {
     }
 }
 
+class TutorialPopup {
+    constructor(scene) {
+        Object.defineProperty(this, "scene", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "container", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "background", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.scene = scene;
+    }
+    showFirstTutorial(onContinue) {
+        this.background = this.scene.add.rectangle(400, 300, 800, 600, 0x000000, 0.7).setScrollFactor(0).setDepth(3000);
+        this.container = this.scene.add.container(400, 300).setScrollFactor(0).setDepth(3001);
+        const popupBg = this.scene.add.graphics().fillStyle(0xffffff).fillRoundedRect(-250, -180, 500, 360, 15).lineStyle(3, 0x000000).strokeRoundedRect(-250, -180, 500, 360, 15);
+        const titleText = this.scene.add.text(0, -140, 'Instructions', { fontSize: '28px', color: '#000000', fontStyle: 'bold', align: 'center' }).setOrigin(0.5);
+        const instructions = [
+            'Hold SPACE to use fuel for thrust',
+            '',
+            'Collect berries for bonus money:',
+            '• Blue berries = good',
+            '• Red berries = bad',
+            '• Higher berries = more money',
+            '',
+            'Upgrade your plane with the money you earn!',
+        ];
+        const instructionTexts = [];
+        let yPos = -80;
+        instructions.forEach(line => {
+            if (line !== '') {
+                const text = this.scene.add.text(0, yPos, line, { fontSize: '18px', color: '#000000', align: 'center' }).setOrigin(0.5);
+                instructionTexts.push(text);
+            }
+            yPos += line === '' ? 10 : 25;
+        });
+        const continueText = this.scene.add.text(0, 140, 'Click anywhere to continue', { fontSize: '16px', color: '#666666', align: 'center' }).setOrigin(0.5);
+        this.container.add([popupBg, titleText, ...instructionTexts, continueText]);
+        this.background.setInteractive().on('pointerdown', () => { this.hide(); onContinue(); });
+    }
+    hide() {
+        if (this.background) {
+            this.background.destroy();
+        }
+        if (this.container) {
+            this.container.destroy();
+        }
+    }
+}
+
 class Game extends phaser_minExports.Scene {
     constructor() {
         super('Game');
@@ -1088,6 +1349,12 @@ class Game extends phaser_minExports.Scene {
             writable: true,
             value: 0
         });
+        Object.defineProperty(this, "berriesCollected", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
         Object.defineProperty(this, "scoreSquares", {
             enumerable: true,
             configurable: true,
@@ -1129,10 +1396,17 @@ class Game extends phaser_minExports.Scene {
                 berryMagnet: 0,
                 reducedWeight: 0,
                 launchPower: 0,
+                thrustPower: 0,
                 easierLaunch: 0,
                 moreFuel: 0,
                 berryBoost: 0
             }
+        });
+        Object.defineProperty(this, "currentDay", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
         });
     }
     create() {
@@ -1141,38 +1415,54 @@ class Game extends phaser_minExports.Scene {
         this.gameInput = new GameInput(this);
         this.ui = new GameUI(this);
         this.scorePopup = new ScorePopup(this);
+        const tutorialPopup = new TutorialPopup(this);
         //world stuff
         this.physics.world.setBounds(0, 0, 3000, 600);
         this.physics.world.gravity.set(0, 0);
         //score calc
         this.scoreSquares = this.add.group();
-        this.berryManager = new BerryManager(this, this.scoreSquares);
+        //plane
+        this.plane = new Glider(this, 0, 560, 'plane');
+        this.berryManager = new BerryManager(this, this.scoreSquares, this.plane);
+        this.loadUpgrades();
+        this.applyUpgrades();
+        if (this.currentDay === 1) {
+            tutorialPopup.showFirstTutorial(() => { });
+        }
         //launch
         this.launchMechanism = new LaunchMechanism(this, (power, angle) => {
             this.plane.launch(power, angle);
-            // Reset movement tracking when launched
             this.lastPosition = { x: this.plane.sprite.x, y: this.plane.sprite.y };
             this.timeSinceMovement = 0;
             this.gameEnded = false;
-        });
-        //plane stuff
-        this.plane = new Glider(this, 0, 560, 'plane');
+            // 3 sec deay
+            this.time.delayedCall(3000, () => {
+                if (!this.gameEnded) {
+                    this.ui.showProgressBar();
+                }
+            });
+        }, this.upgrades.launchPower, this.upgrades.easierLaunch);
         this.cameras.main.startFollow(this.plane.sprite);
         this.cameras.main.setScroll(0, 0);
         this.physics.add.overlap(this.plane.sprite, this.scoreSquares, (_plane, scoreSquare) => {
             const container = scoreSquare;
             const modifier = container.getData('modifier');
-            this.score = modifier.calculateScore(this.score);
+            //scoreupgrade
+            const berryMultiplier = 1 + (this.upgrades.berryScore * 0.5);
+            const baseScore = modifier.calculateScore(this.score);
+            const bonusScore = Math.floor((baseScore - this.score) * berryMultiplier);
+            this.score = this.score + bonusScore;
+            //berry boost
+            if (modifier.getValue() > 0) {
+                this.plane.berryBoost();
+                this.berriesCollected++;
+            }
             modifier.destroy();
-            //maybe no boost for berries
-            // this.plane.boost(0.4, 200);
         });
-        // Load persistent upgrades from localStorage
-        this.loadUpgrades();
-        this.applyUpgrades();
     }
     resetGameVariables() {
         this.score = 0;
+        this.berriesCollected = 0;
         this.maxAltitude = 0;
         this.timeSinceMovement = 0;
         this.gameEnded = false;
@@ -1203,7 +1493,21 @@ class Game extends phaser_minExports.Scene {
             }
             //game over after 2 secs - only if plane has been launched
             if (this.timeSinceMovement >= 2000 && this.plane.launched()) {
+                this.ui.hideProgressBar();
                 this.endGame(distance, this.maxAltitude);
+                return;
+            }
+            // check if won
+            if (Math.floor(distance / 10) >= 9900 && !this.gameEnded) {
+                this.gameEnded = true;
+                this.ui.hideProgressBar();
+                // calc money 
+                const baseScoreBonus = this.score * (1 + (this.upgrades.berryScore * 0.5));
+                const distanceBonus = Math.floor(distance / 100) * 1.5;
+                const altitudeBonus = Math.floor(this.maxAltitude / 100) * 3;
+                const totalMoney = Math.floor(baseScoreBonus + distanceBonus + altitudeBonus);
+                this.cameras.main.fadeOut(2000, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => { this.scene.start('Win1', { money: totalMoney, upgrades: this.upgrades, currentDay: this.currentDay }); });
                 return;
             }
             if (altitude < 272) {
@@ -1220,23 +1524,24 @@ class Game extends phaser_minExports.Scene {
         }
     }
     applyUpgrades() {
-        if (this.upgrades.reducedDrag > 0) {
-            this.plane.setDragMultiplier(1 + (this.upgrades.reducedDrag * 0.1));
-        }
-        if (this.upgrades.reducedWeight > 0) {
-            this.plane.setWeightMultiplier(1 - (this.upgrades.reducedWeight * 0.1));
-        }
-        if (this.upgrades.moreFuel > 0) {
-            this.plane.setFuelMultiplier(1 + (this.upgrades.moreFuel * 0.2));
-        }
+        this.plane.reduceDrag(this.upgrades.reducedDrag * 100000);
+        this.plane.setWeightMultiplier(1 - (this.upgrades.reducedWeight * 0.03));
+        this.plane.setFuelMultiplier(1 + (this.upgrades.moreFuel ** (4 / 3) * 0.2));
+        this.plane.setThrustMultiplier(1 + (this.upgrades.thrustPower * 0.3));
+        this.plane.setMagnetRange(this.upgrades.berryMagnet * 40);
+        this.plane.setBBoostMulti(this.upgrades.berryBoost);
     }
     loadUpgrades() {
         try {
-            const savedData = localStorage.getItem('planeGameData');
+            const savedData = localStorage.getItem('gameData1');
             if (savedData) {
                 const data = JSON.parse(savedData);
                 if (data.upgrades) {
                     this.upgrades = { ...this.upgrades, ...data.upgrades };
+                }
+                // Load current day
+                if (data.currentDay) {
+                    this.currentDay = data.currentDay;
                 }
             }
         }
@@ -1248,16 +1553,20 @@ class Game extends phaser_minExports.Scene {
         if (sceneData?.upgrades) {
             this.upgrades = { ...this.upgrades, ...sceneData.upgrades };
         }
+        if (sceneData?.currentDay) {
+            this.currentDay = sceneData.currentDay;
+        }
     }
     endGame(distance, maxAltitude) {
         this.gameEnded = true;
         // calc upgrades
         const baseScoreBonus = this.score * (1 + (this.upgrades.berryScore * 0.5));
-        const distanceBonus = Math.floor(distance / 100) * 2;
-        const altitudeBonus = Math.floor(maxAltitude / 100) * 5;
+        const distanceBonus = Math.floor(distance / 100) * 1.5;
+        const altitudeBonus = Math.floor(maxAltitude / 100) * 3;
         const totalMoney = Math.floor(baseScoreBonus + distanceBonus + altitudeBonus);
-        this.scorePopup.show(this.score, distance, maxAltitude, () => {
-            this.scene.start('Upgrade', { money: totalMoney, upgrades: this.upgrades });
+        this.scorePopup.show(this.score, distance, maxAltitude, this.currentDay, this.berriesCollected, () => {
+            this.currentDay++;
+            this.scene.start('Upgrade', { money: totalMoney, upgrades: this.upgrades, currentDay: this.currentDay });
         });
     }
 }
@@ -1297,10 +1606,95 @@ class Menu extends phaser_minExports.Scene {
         this.menuContainer = this.add.container(400, 400);
         this.menuContainer.add(this.imageButton(0, 0, 'play_button', () => this.toGameTrans()));
         this.gameSelectContainer = this.add.container(1200, 400);
-        const newGameButton = this.imageButton(0, -50, 'new_game_button', () => this.scene.start('Intro'));
-        const loadGameButton = this.imageButton(0, 45, 'load_game_button', () => { });
+        const newGameButton = this.imageButton(0, -50, 'new_game_button', () => this.handleNewGame());
+        const loadGameButton = this.imageButton(0, 45, 'load_game_button', () => this.handleLoadGame());
         const backButton = this.imageButton(0, 140, 'back_button', () => this.toMenuTrans());
         this.gameSelectContainer.add([newGameButton, loadGameButton, backButton]);
+    }
+    handleNewGame() {
+        const existingData = localStorage.getItem('gameData1');
+        if (existingData) {
+            this.showConfirmationPopup('Overwrite Save?', 'Starting a new game will delete your current save data. Are you sure?', () => {
+                localStorage.removeItem('gameData1');
+                this.scene.start('Intro');
+            }, () => {
+                // do nothing
+            });
+        }
+        else {
+            // no save
+            this.scene.start('Intro');
+        }
+    }
+    handleLoadGame() {
+        const existingData = localStorage.getItem('gameData1');
+        if (existingData) {
+            try {
+                const data = JSON.parse(existingData);
+                this.scene.start('Upgrade', {
+                    money: 0,
+                    upgrades: data.upgrades || {},
+                    currentDay: data.currentDay || 1
+                });
+            }
+            catch (error) {
+                // broken catch
+                this.showMessagePopup('Error', 'Save data is corrupted. Please start a new game.');
+            }
+        }
+        else {
+            // no save
+            this.showMessagePopup('No Save Data', 'No save data found. Please start a new game first.');
+        }
+    }
+    showConfirmationPopup(title, message, onConfirm, onCancel) {
+        const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7).setScrollFactor(0).setDepth(4000);
+        const popup = this.add.container(400, 300).setScrollFactor(0).setDepth(4001);
+        const bg = this.add.graphics().fillStyle(0xffffff).fillRoundedRect(-200, -100, 400, 200, 15).lineStyle(3, 0x000000).strokeRoundedRect(-200, -100, 400, 200, 15);
+        const titleText = this.add.text(0, -60, title, { fontSize: '24px', color: '#000000', fontStyle: 'bold' }).setOrigin(0.5);
+        const messageText = this.add.text(0, -20, message, { fontSize: '16px', color: '#000000', align: 'center', wordWrap: { width: 350 } }).setOrigin(0.5);
+        const yesButton = this.add.text(-80, 50, 'YES', { fontSize: '18px', color: '#ffffff', fontStyle: 'bold', backgroundColor: '#ff0000', padding: { x: 20, y: 10 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const noButton = this.add.text(80, 50, 'NO', { fontSize: '18px', color: '#ffffff', fontStyle: 'bold', backgroundColor: '#007acc', padding: { x: 20, y: 10 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        yesButton.on('pointerdown', () => { overlay.destroy(); popup.destroy(); onConfirm(); });
+        noButton.on('pointerdown', () => { overlay.destroy(); popup.destroy(); onCancel(); });
+        popup.add([bg, titleText, messageText, yesButton, noButton]);
+        overlay.setInteractive().on('pointerdown', () => { overlay.destroy(); popup.destroy(); onCancel(); });
+    }
+    showMessagePopup(title, message) {
+        const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7).setScrollFactor(0).setDepth(4000);
+        const popup = this.add.container(400, 300).setScrollFactor(0).setDepth(4001);
+        const bg = this.add.graphics()
+            .fillStyle(0xffffff)
+            .fillRoundedRect(-200, -80, 400, 160, 15)
+            .lineStyle(3, 0x000000)
+            .strokeRoundedRect(-200, -80, 400, 160, 15);
+        const titleText = this.add.text(0, -40, title, {
+            fontSize: '24px',
+            color: '#000000',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        const messageText = this.add.text(0, 0, message, {
+            fontSize: '16px',
+            color: '#000000',
+            align: 'center',
+            wordWrap: { width: 350 }
+        }).setOrigin(0.5);
+        const okButton = this.add.text(0, 40, 'OK', {
+            fontSize: '18px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            backgroundColor: '#007acc',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        okButton.on('pointerdown', () => {
+            overlay.destroy();
+            popup.destroy();
+        });
+        popup.add([bg, titleText, messageText, okButton]);
+        overlay.setInteractive().on('pointerdown', () => {
+            overlay.destroy();
+            popup.destroy();
+        });
     }
     toGameTrans() {
         if (this.state !== 'menu')
@@ -1313,14 +1707,12 @@ class Menu extends phaser_minExports.Scene {
         if (this.state !== 'gameSelect')
             return;
         this.state = 'menu';
-        // Slide game select menu out to the right
         this.tweens.add({
             targets: this.gameSelectContainer,
             x: 1200,
             duration: 500,
             ease: 'Power2.easeInOut'
         });
-        // Slide main menu in from the left
         this.tweens.add({
             targets: this.menuContainer,
             x: 400,
@@ -1431,7 +1823,12 @@ class Upgrade extends phaser_minExports.Scene {
             writable: true,
             value: void 0
         });
-        // Upgrade states
+        Object.defineProperty(this, "currentDay", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
+        });
         Object.defineProperty(this, "upgrades", {
             enumerable: true,
             configurable: true,
@@ -1442,6 +1839,7 @@ class Upgrade extends phaser_minExports.Scene {
                 berryMagnet: 0,
                 reducedWeight: 0,
                 launchPower: 0,
+                thrustPower: 0,
                 easierLaunch: 0,
                 moreFuel: 0,
                 berryBoost: 0
@@ -1450,126 +1848,98 @@ class Upgrade extends phaser_minExports.Scene {
     }
     create() {
         this.loadGameData();
+        //load moneys earned
+        const data = this.scene.settings.data;
+        if (data.currentDay) {
+            this.currentDay = data.currentDay;
+        }
+        if (data.money) {
+            this.playerMoney += data.money;
+            this.saveGameData();
+            //reset money so it dont keep adding
+            this.scene.settings.data = { ...data, money: 0 };
+        }
         this.add.image(400, 300, 'upgrade_menu').setDisplaySize(800, 600);
-        this.add.graphics()
-            .fillStyle(0x3498db, 0.9)
-            .fillRoundedRect(50, 10, 700, 580, 20)
-            .lineStyle(4, 0x2980b9)
-            .strokeRoundedRect(50, 10, 700, 580, 20);
-        this.add.graphics()
-            .fillStyle(0xffffff, 0.95)
-            .fillRoundedRect(70, 30, 660, 60, 15)
-            .lineStyle(2, 0x2980b9)
-            .strokeRoundedRect(70, 30, 660, 60, 15);
-        this.add.text(400, 60, 'UPGRADE YOUR PLANE', {
-            fontSize: '28px',
-            color: '#2980b9',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.add.graphics()
-            .fillStyle(0xffffff, 0.95)
-            .fillRoundedRect(300, 100, 200, 40, 10)
-            .lineStyle(2, 0x2980b9)
-            .strokeRoundedRect(300, 100, 200, 40, 10);
-        this.moneyText = this.add.text(400, 120, `Money: $${this.playerMoney}`, {
-            fontSize: '18px',
-            color: '#2980b9',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
+        this.add.graphics().fillStyle(0x3498db, 0.9).fillRoundedRect(50, 10, 700, 580, 20).lineStyle(4, 0x2980b9).strokeRoundedRect(50, 10, 700, 580, 20);
+        this.add.graphics().fillStyle(0xffffff, 0.95).fillRoundedRect(70, 30, 660, 60, 15).lineStyle(2, 0x2980b9).strokeRoundedRect(70, 30, 660, 60, 15);
+        this.add.text(400, 60, `DAY ${this.currentDay}`, { fontSize: '28px', color: '#2980b9', fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.graphics().fillStyle(0xffffff, 0.95).fillRoundedRect(300, 100, 200, 40, 10).lineStyle(2, 0x2980b9).strokeRoundedRect(300, 100, 200, 40, 10);
+        this.moneyText = this.add.text(400, 120, `Money: $${this.playerMoney}`, { fontSize: '18px', color: '#2980b9', fontStyle: 'bold' }).setOrigin(0.5);
         const upgradeConfigs = [
-            { key: 'reducedDrag', name: 'Reduced Drag', cost: 50, description: 'Better aerodynamics' },
-            { key: 'berryScore', name: 'Berry Score+', cost: 75, description: 'More points per berry' },
-            { key: 'berryMagnet', name: 'Berry Magnet', cost: 100, description: 'Attracts nearby berries' },
-            { key: 'reducedWeight', name: 'Reduced Weight', cost: 80, description: 'Lighter plane flies better' },
-            { key: 'launchPower', name: 'Launch Power+', cost: 120, description: 'Stronger launch force' },
-            { key: 'easierLaunch', name: 'Easier Launch', cost: 90, description: 'Launch timing assistance' },
-            { key: 'moreFuel', name: 'More Fuel', cost: 110, description: 'Increased fuel capacity' },
-            { key: 'berryBoost', name: 'Berry Boost', cost: 130, description: 'Berries give speed boost' }
+            { key: 'reducedDrag', name: 'Sparrowdynamics', costs: [40, 80, 150, 250, 400], description: 'Reduces air resistance' },
+            { key: 'berryScore', name: 'Berry Score+', costs: [200, 500, 1000, 2000, 5000], description: 'More money per berry' },
+            { key: 'berryMagnet', name: 'Berry Magnet', costs: [100, 300, 600, 1000, 1500], description: 'Attracts nearby berries' },
+            { key: 'reducedWeight', name: 'Reduced Weight', costs: [50, 120, 200, 300, 500], description: 'Lighter plane flies better' },
+            { key: 'launchPower', name: 'Launch Power+', costs: [120, 250, 400, 600, 850], description: 'Stronger launch force' },
+            { key: 'thrustPower', name: 'Engine Power', costs: [180, 320, 480, 750, 1200], description: 'Stronger engine thrust' },
+            { key: 'easierLaunch', name: 'Easier Launch', costs: [250, 500, 750, 1000, 1250], description: 'Slower Launch Meter' },
+            { key: 'moreFuel', name: 'More Fuel', costs: [60, 150, 300, 500, 800, 1200, 1800, 2500, 3500, 4800], description: 'Increased fuel capacity' },
+            { key: 'berryBoost', name: 'Berry Boost', costs: [400, 800, 1400, 2400, 4000], description: 'Berries give speed boost' }
         ];
+        let hoverText = null;
+        let hoverBg = null;
         upgradeConfigs.forEach((upgrade, index) => {
-            const col = index % 2;
-            const row = Math.floor(index / 2);
-            const x = col === 0 ? 200 : 600;
-            const y = 180 + (row * 70);
-            this.add.graphics()
-                .fillStyle(0xffffff, 0.95)
-                .fillRoundedRect(x - 140, y - 30, 280, 60, 10)
-                .lineStyle(2, 0x2980b9)
-                .strokeRoundedRect(x - 140, y - 30, 280, 60, 10);
+            const col = index % 4;
+            const row = Math.floor(index / 4);
+            const x = 150 + (col * 125);
+            const y = 200 + (row * 125);
             const currentLevel = this.upgrades[upgrade.key];
-            const displayName = currentLevel > 0 ? `${upgrade.name} (${currentLevel})` : upgrade.name;
-            this.add.text(x - 120, y - 12, displayName, {
-                fontSize: '16px',
-                color: '#2980b9',
-                fontStyle: 'bold'
-            }).setOrigin(0, 0.5);
-            this.add.text(x - 120, y + 8, upgrade.description, {
-                fontSize: '12px',
-                color: '#34495e'
-            }).setOrigin(0, 0.5);
-            this.add.text(x + 80, y - 8, `$${upgrade.cost}`, {
-                fontSize: '14px',
-                color: '#e74c3c',
-                fontStyle: 'bold'
-            }).setOrigin(0.5);
-            const buyButton = this.add.rectangle(x + 80, y + 15, 60, 20, 0x27ae60)
-                .setStrokeStyle(1, 0x229954)
-                .setInteractive({ useHandCursor: true });
-            this.add.text(x + 80, y + 15, 'BUY', {
-                fontSize: '12px',
-                color: '#ffffff',
-                fontStyle: 'bold'
-            }).setOrigin(0.5);
-            buyButton.on('pointerdown', () => {
-                this.purchaseUpgrade(upgrade.key, upgrade.cost);
+            const maxLevel = upgrade.costs.length;
+            const currentCost = upgrade.costs[currentLevel] || 999999;
+            const canAfford = this.playerMoney >= currentCost && currentLevel < maxLevel;
+            const isMaxLevel = currentLevel >= maxLevel;
+            const fillPercentage = currentLevel / maxLevel;
+            const bgSquare = this.add.rectangle(x, y, 100, 100, 0x333333, 1).setStrokeStyle(3, 0x000000).setInteractive({ useHandCursor: true });
+            const fillHeight = 100 * fillPercentage;
+            const fillY = y + (100 - fillHeight) / 2;
+            const fillSquare = this.add.rectangle(x, fillY, 100, fillHeight, 0x00ff00, 1);
+            this.add.text(x, y, currentLevel.toString(), { fontSize: '36px', color: fillPercentage > 0.5 ? '#000000' : '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+            const alpha = (canAfford || isMaxLevel) ? 1 : 0.5;
+            bgSquare.setAlpha(alpha);
+            fillSquare.setAlpha(alpha);
+            bgSquare.on('pointerover', () => {
+                if (hoverText)
+                    hoverText.destroy();
+                if (hoverBg)
+                    hoverBg.destroy();
+                hoverBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRoundedRect(x - 100, y - 90, 200, 80, 10);
+                hoverText = this.add.text(x, y - 70, upgrade.name, { fontSize: '16px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+                const descText = this.add.text(x, y - 50, upgrade.description, { fontSize: '12px', color: '#ffffff' }).setOrigin(0.5);
+                const costText = this.add.text(x, y - 30, isMaxLevel ? 'MAX LEVEL' : `Cost: $${currentCost}`, { fontSize: '14px', color: isMaxLevel ? '#ffff00' : (canAfford ? '#00ff00' : '#ff0000'), fontStyle: 'bold' }).setOrigin(0.5);
+                hoverText.setData('extraTexts', [descText, costText]);
+            });
+            bgSquare.on('pointerout', () => {
+                if (hoverText) {
+                    const extraTexts = hoverText.getData('extraTexts');
+                    if (extraTexts)
+                        extraTexts.forEach((text) => text.destroy());
+                    hoverText.destroy();
+                    hoverText = null;
+                }
+                if (hoverBg) {
+                    hoverBg.destroy();
+                    hoverBg = null;
+                }
+            });
+            bgSquare.on('pointerdown', () => {
+                if (canAfford && !isMaxLevel) {
+                    this.purchaseUpgrade(upgrade.key, currentCost);
+                }
             });
         });
-        this.add.graphics()
-            .fillStyle(0xffffff, 0.95)
-            .fillRoundedRect(300, 530, 200, 40, 15)
-            .lineStyle(2, 0x2980b9)
-            .strokeRoundedRect(300, 530, 200, 40, 15);
-        const backButton = this.add.rectangle(400, 550, 200, 40, 0x000000, 0)
-            .setInteractive({ useHandCursor: true });
-        this.add.text(400, 550, 'FLY AGAIN', {
-            fontSize: '16px',
-            color: '#2980b9',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        backButton.on('pointerdown', () => {
-            this.saveGameData();
-            this.scene.start('Game', { upgrades: this.upgrades });
-        });
-        // Add reset button
-        this.add.graphics()
-            .fillStyle(0xe74c3c, 0.95)
-            .fillRoundedRect(520, 530, 120, 40, 15)
-            .lineStyle(2, 0xc0392b)
-            .strokeRoundedRect(520, 530, 120, 40, 15);
-        const resetButton = this.add.rectangle(580, 550, 120, 40, 0x000000, 0)
-            .setInteractive({ useHandCursor: true });
-        this.add.text(580, 550, 'RESET UPGRADES', {
-            fontSize: '14px',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        resetButton.on('pointerdown', () => {
-            this.resetAllUpgrades();
-        });
-        const data = this.scene.settings.data;
-        if (data?.money) {
-            this.playerMoney += data.money;
-            this.updateMoneyDisplay();
-            this.saveGameData();
-        }
+        this.add.graphics().fillStyle(0xffffff, 0.95).fillRoundedRect(300, 530, 200, 40, 15).lineStyle(2, 0x2980b9).strokeRoundedRect(300, 530, 200, 40, 15);
+        const backButton = this.add.rectangle(400, 550, 200, 40, 0x000000, 0).setInteractive({ useHandCursor: true });
+        this.add.text(400, 550, 'FLY AGAIN', { fontSize: '16px', color: '#2980b9', fontStyle: 'bold' }).setOrigin(0.5);
+        backButton.on('pointerdown', () => { this.saveGameData(); this.scene.start('Game', { upgrades: this.upgrades, currentDay: this.currentDay }); });
     }
     loadGameData() {
         try {
-            const savedData = localStorage.getItem('planeGameData');
+            const savedData = localStorage.getItem('gameData1');
             if (savedData) {
                 const data = JSON.parse(savedData);
                 this.playerMoney = data.money || 0;
                 this.upgrades = { ...this.upgrades, ...data.upgrades };
+                this.currentDay = data.currentDay || 1;
             }
         }
         catch (error) {
@@ -1578,11 +1948,8 @@ class Upgrade extends phaser_minExports.Scene {
     }
     saveGameData() {
         try {
-            const dataToSave = {
-                money: this.playerMoney,
-                upgrades: this.upgrades
-            };
-            localStorage.setItem('planeGameData', JSON.stringify(dataToSave));
+            const dataToSave = { money: this.playerMoney, upgrades: this.upgrades, currentDay: this.currentDay };
+            localStorage.setItem('gameData1', JSON.stringify(dataToSave));
         }
         catch (error) {
             console.warn('Could not save game data:', error);
@@ -1590,35 +1957,13 @@ class Upgrade extends phaser_minExports.Scene {
     }
     purchaseUpgrade(upgradeKey, cost) {
         if (this.playerMoney >= cost) {
+            //afford
             this.playerMoney -= cost;
             this.upgrades[upgradeKey]++;
-            this.updateMoneyDisplay();
+            this.moneyText.setText(`Money: $${this.playerMoney}`);
             this.saveGameData();
-            console.log(`Purchased ${upgradeKey} level ${this.upgrades[upgradeKey]}`);
             this.scene.restart();
         }
-        else {
-            console.log('Not enough money!');
-        }
-    }
-    updateMoneyDisplay() {
-        this.moneyText.setText(`Money: $${this.playerMoney}`);
-    }
-    resetAllUpgrades() {
-        this.upgrades = {
-            reducedDrag: 0,
-            berryScore: 0,
-            berryMagnet: 0,
-            reducedWeight: 0,
-            launchPower: 0,
-            easierLaunch: 0,
-            moreFuel: 0,
-            berryBoost: 0
-        };
-        this.playerMoney = 0;
-        this.saveGameData();
-        this.scene.restart();
-        console.log('All upgrades and money reset!');
     }
 }
 
@@ -1679,8 +2024,40 @@ class Preloader extends phaser_minExports.Scene {
     }
 }
 
-//  Find out more information about the Game Config at:
-//  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
+class Win1 extends phaser_minExports.Scene {
+    constructor() {
+        super('Win1');
+        Object.defineProperty(this, "currentDay", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 1
+        });
+        Object.defineProperty(this, "upgrades", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "money", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+    }
+    create() {
+        const data = this.scene.settings.data;
+        this.currentDay = data.currentDay || 1;
+        this.upgrades = data.upgrades || {};
+        this.money = data.money || 0;
+        this.cameras.main.setBackgroundColor('#000000');
+        this.add.text(400, 200, `You made it on Day ${this.currentDay}!`, { fontSize: '48px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
+        const continueButton = this.add.text(400, 350, 'Continue?', { fontSize: '32px', color: '#00ff00', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        continueButton.on('pointerdown', () => { this.scene.start('Upgrade', { money: this.money, upgrades: this.upgrades, currentDay: this.currentDay + 1 }); });
+    }
+}
+
 const config = {
     type: phaser_minExports.AUTO,
     width: 800,
@@ -1701,7 +2078,8 @@ const config = {
         Intro,
         Menu,
         Game,
-        Upgrade
+        Upgrade,
+        Win1
     ]
 };
 const StartGame = (parent) => {
