@@ -3,15 +3,18 @@ import { Scene } from "phaser";
 export class GameUI {
     private scene: Scene;
 
-
     private altitudeContainer: Phaser.GameObjects.Container;
     private distanceContainer: Phaser.GameObjects.Container;
     private velocityContainer: Phaser.GameObjects.Container;
     private fuelText: Phaser.GameObjects.Text;
 
-
-
     private fuelBarFill: Phaser.GameObjects.Rectangle;
+
+
+    private progressLine: Phaser.GameObjects.Graphics;
+    private progressArrow: Phaser.GameObjects.Graphics;
+    private progressText: Phaser.GameObjects.Container;
+    private progressBarVisible: boolean = false;
 
     private cityLayer1: Phaser.GameObjects.TileSprite;
     private cityLayer2: Phaser.GameObjects.TileSprite;
@@ -54,6 +57,25 @@ export class GameUI {
         this.scene.add.rectangle(20, 520, 160, 16, 0x333333).setOrigin(0, 0).setScrollFactor(0).setDepth(3);
         this.fuelBarFill = this.scene.add.rectangle(22, 522, 156, 12, 0x00ff00).setOrigin(0, 0).setScrollFactor(0).setDepth(3);
         this.fuelText = this.scene.add.text(20, 545, 'Fuel: 100%', {fontSize: '16px', color: '#ffffff'}).setOrigin(0, 0).setScrollFactor(0).setDepth(3);
+
+        // progress bar line
+        this.progressLine = this.scene.add.graphics().setScrollFactor(0).setDepth(4).setVisible(false);
+        this.progressArrow = this.scene.add.graphics().setScrollFactor(0).setDepth(4).setVisible(false);
+        this.progressText = this.createTextSprites(400, 545, '10000m', 0.5, 0.5, 0.08).setDepth(4).setVisible(false);
+    }
+
+    public showProgressBar(): void {
+        this.progressBarVisible = true;
+        this.progressLine.setVisible(true);
+        this.progressArrow.setVisible(true);
+        this.progressText.setVisible(true);
+    }
+    
+    public hideProgressBar(): void {
+        this.progressBarVisible = false;
+        this.progressLine.setVisible(false);
+        this.progressArrow.setVisible(false);
+        this.progressText.setVisible(false);
     }
 
     private generateClouds(screenX: number, screenY: number): void {
@@ -82,11 +104,7 @@ export class GameUI {
                 y = screenY * 600 + Phaser.Math.Between(0, 600);
             }
             
-            const cloud = this.scene.add.image(x, y, 'cloud_1')
-                .setOrigin(0.5)
-                .setScale(Phaser.Math.FloatBetween(0.4, 1.0))
-                .setAlpha(Phaser.Math.FloatBetween(0.5, 0.7))
-                .setDepth(0);
+            const cloud = this.scene.add.image(x, y, 'cloud_1').setOrigin(0.5).setScale(Phaser.Math.FloatBetween(0.4, 1.0)).setAlpha(Phaser.Math.FloatBetween(0.5, 0.7)).setDepth(0);
 
             this.clouds.push(cloud);
         }
@@ -150,6 +168,28 @@ export class GameUI {
             this.fuelBarFill.setFillStyle(0xff0000); // red
         }
 
+        // update progress bar
+        if (this.progressBarVisible) {
+            const distanceMeters = Math.floor(dist / 10);
+            const progress = Math.min(distanceMeters / 10000, 1); 
+            
+            this.progressLine.clear();
+            this.progressLine.lineStyle(3, 0x000000);
+            this.progressLine.beginPath();
+            this.progressLine.moveTo(250, 540);
+            this.progressLine.lineTo(550, 540);
+            this.progressLine.strokePath();
+
+            const arrowX = 250 + (300 * progress);
+            this.progressArrow.clear();
+            this.progressArrow.fillStyle(0x000000);
+            this.progressArrow.beginPath();
+            this.progressArrow.moveTo(arrowX, 530); 
+            this.progressArrow.lineTo(arrowX - 8, 520); 
+            this.progressArrow.lineTo(arrowX + 8, 520); 
+            this.progressArrow.closePath();
+            this.progressArrow.fillPath();
+        }
 
         //scrolling bg
         const camera = this.scene.cameras.main;
@@ -170,8 +210,6 @@ export class GameUI {
 
         this.lastCX = cX;
         this.lastCY = cY;
-
-        
     }
 
 

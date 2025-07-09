@@ -45,8 +45,8 @@ export class BerryManager {
                         const attraction = Math.min(300, 8000 / distance);
                         const angle = Phaser.Math.Angle.Between(container.x, container.y, planeX, planeY);
                         
-                        container.x += Math.cos(angle) * attraction * (1/60);
-                        container.y += Math.sin(angle) * attraction * (1/60);
+                        container.x += Math.cos(angle) * attraction * (1/30);
+                        container.y += Math.sin(angle) * attraction * (1/30);
                     }
                 }
             });

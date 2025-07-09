@@ -5,10 +5,9 @@ import { Intro } from './scenes/Intro';
 import { Upgrade } from './scenes/Upgrade';
 import { AUTO, Game } from 'phaser';
 import { Preloader } from './scenes/Preloader';
+import { Win1 } from './scenes/Win1';
 
 
-//  Find out more information about the Game Config at:
-//  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
     width: 800,
@@ -29,7 +28,8 @@ const config: Phaser.Types.Core.GameConfig = {
         Intro,
         Menu,
         MainGame,
-        Upgrade
+        Upgrade,
+        Win1
         
     ]
     

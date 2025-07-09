@@ -79,6 +79,13 @@ export class Game extends Scene
             this.lastPosition = { x: this.plane.sprite.x, y: this.plane.sprite.y };
             this.timeSinceMovement = 0;
             this.gameEnded = false;
+            
+            // 3 sec deay
+            this.time.delayedCall(3000, () => {
+                if (!this.gameEnded) {
+                    this.ui.showProgressBar();
+                }
+            });
         }, this.upgrades.launchPower, this.upgrades.easierLaunch); 
 
         this.cameras.main.startFollow(this.plane.sprite);
@@ -146,7 +153,24 @@ export class Game extends Scene
 
            //game over after 2 secs - only if plane has been launched
             if (this.timeSinceMovement >= 2000 && this.plane.launched()) {
+                this.ui.hideProgressBar();
                 this.endGame(distance, this.maxAltitude);
+                return;
+            }
+
+            // check if won
+            if (Math.floor(distance / 10) >= 9900 && !this.gameEnded) {
+                this.gameEnded = true;
+                this.ui.hideProgressBar();
+                
+                // calc money 
+                const baseScoreBonus = this.score * (1 + (this.upgrades.berryScore * 0.5));
+                const distanceBonus = Math.floor(distance / 100) * 1.5;
+                const altitudeBonus = Math.floor(this.maxAltitude / 100) * 3;
+                const totalMoney = Math.floor(baseScoreBonus + distanceBonus + altitudeBonus);
+                
+                this.cameras.main.fadeOut(2000, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => {this.scene.start('Win1', {money: totalMoney, upgrades: this.upgrades,currentDay: this.currentDay});});
                 return;
             }
 
@@ -169,7 +193,7 @@ export class Game extends Scene
     private applyUpgrades(): void {
         this.plane.reduceDrag(this.upgrades.reducedDrag * 100000);
         this.plane.setWeightMultiplier(1 - (this.upgrades.reducedWeight * 0.03));
-        this.plane.setFuelMultiplier(1 + (this.upgrades.moreFuel * 0.2));
+        this.plane.setFuelMultiplier(1 + (this.upgrades.moreFuel**(4/3) * 0.2));
         this.plane.setThrustMultiplier(1 + (this.upgrades.thrustPower * 0.3));
         this.plane.setMagnetRange(this.upgrades.berryMagnet * 40);
         this.plane.setBBoostMulti(this.upgrades.berryBoost);
