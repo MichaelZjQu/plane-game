@@ -45,3 +45,31 @@ Your progress is automatically saved. You can:
 ## Demo Link
 
 [Demo](https://michaelzjqu.github.io/plane-game/)
+
+## Running Locally
+
+To run the game on your local machine:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/michaelzjqu/plane-game.git
+   cd plane-game
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser**
+   Navigate to `http://localhost:1234` (or whatever port is shown in your terminal)
+
+5. **Building for production**
+   ```bash
+   npm run build
+   ```
