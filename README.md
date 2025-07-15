@@ -15,7 +15,7 @@ Pip is a sparrow with a super super duper important mission! Fly a plane, collec
 *Soar through the skies, collecting berries*
 
 ![Day Recap](public/assets/screenshots/summary.png)
-*Recap the success of your run* 
+*Recap the success of your run*
 
 ![Upgrade Screen](public/assets/screenshots/upgrade.png)
 *Upgrade your sparrow between flights*
@@ -32,6 +32,7 @@ Pip is a sparrow with a super super duper important mission! Fly a plane, collec
 ## Save System
 
 Your progress is automatically saved. You can:
+
 - Start a new game
 - Continue your adventure from your last save
 - Reset your progress if desired
@@ -41,5 +42,6 @@ Your progress is automatically saved. You can:
 - **Mouse Click**: Time your launch
 - **SPACE**: Activate thrust (hold)
 
-## Demo Link!
+## Demo Link
+
 [Demo](https://michaelzjqu.github.io/plane-game/)
