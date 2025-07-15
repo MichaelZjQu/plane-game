@@ -9,15 +9,22 @@ Pip is a sparrow with a super super duper important mission! Fly a plane, collec
 ## Screenshots
 
 ![Launch System](public/assets/screenshots/launch.png)
+
 *The timing-based launch system*
 
+
 ![Flight Mechanics](public/assets/screenshots/flight.png)
+
 *Soar through the skies, collecting berries*
 
+
 ![Day Recap](public/assets/screenshots/summary.png)
+
 *Recap the success of your run*
 
+
 ![Upgrade Screen](public/assets/screenshots/upgrade.png)
+
 *Upgrade your sparrow between flights*
 
 ## How to Play
